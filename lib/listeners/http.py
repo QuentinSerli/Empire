@@ -714,6 +714,7 @@ class Listener:
         'taskURIs' : "{taskURIs}",
     },
     'send_func': send_message_HTTP,
+    'defaultResponse': {defaultResponse},
     'lostLimit': {lostLimit},
     'missedCheckins':0,
 },
@@ -722,6 +723,17 @@ class Listener:
             f = open(self.mainMenu.installPath + "./data/agent/agent.py")
             code = f.read()
             f.close()
+
+            #patch in the listener_dict with usable data
+            code = code.replace('#LISTENER_DICT',listener_dict.format(
+                delay = delay,
+                jitter = jitter,
+                profile = profile,
+                server = server,
+                headers = headers,
+                taskURIs = taskURIs,
+                lostLimit = lostLimit,
+                defaultResponse = base64.b64decode(b64DefaultResponse))
 
             # patch in the comms methods
             commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
