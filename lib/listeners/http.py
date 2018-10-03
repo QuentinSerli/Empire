@@ -726,7 +726,7 @@ class Listener:
 
                 #iterate through the listeners to retrieve options for each one and generate commCode
                 for l in listeners:
-                    curlistener = active_listeners[l]['listenerObjet']
+                    curlistener = active_listeners[l]['listenerObject']
                     options = active_listeners[l]['options']
                     commsCode = curlistener.generate_comms(options, language=language)
                     code = code.replace('#LISTENER_DICT', commsCode[0])
