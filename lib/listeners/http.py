@@ -704,20 +704,18 @@ class Listener:
 
         elif language == 'python':
             listener_dict = """
-{
+{{
     'delay' : {delay},
     'jitter' : {jitter},
-    'profile': "{profile}",
-    'server': "{server}",
-    'fixed_parameters': {
-        'headers' : "{headers}",
+    'fixed_parameters': {{
+        'headers' : {{'User-Agent': "{UA}", 'Cookie':"{cookie}"}},
         'taskURIs' : "{taskURIs}",
-    },
-    'send_func': send_message_HTTP,
-    'defaultResponse': {defaultResponse},
+    }},
+    'send_func': {send_func},
+    'defaultResponse': "{defaultResponse}",
     'lostLimit': {lostLimit},
     'missedCheckins':0,
-},
+}},
 #LISTENER_DICT
 """
             f = open(self.mainMenu.installPath + "./data/agent/agent.py")
@@ -725,15 +723,16 @@ class Listener:
             f.close()
 
             #patch in the listener_dict with usable data
+            
             code = code.replace('#LISTENER_DICT',listener_dict.format(
+                send_func = "send_message_{}".format(listenerOptions['Name']['Value']),
                 delay = delay,
                 jitter = jitter,
-                profile = profile,
-                server = server,
-                headers = headers,
-                taskURIs = taskURIs,
+                UA = profile.split('|')[1],
+                cookie = self.options['Cookie']['Value'],
+                taskURIs = profile.split('|')[0],
                 lostLimit = lostLimit,
-                defaultResponse = base64.b64decode(b64DefaultResponse))
+                defaultResponse = b64DefaultResponse))
 
             # patch in the comms methods
             commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
