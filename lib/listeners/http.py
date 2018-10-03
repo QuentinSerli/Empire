@@ -703,40 +703,14 @@ class Listener:
             return code
 
         elif language == 'python':
-            listener_dict = """
-{{
-    'delay' : {delay},
-    'jitter' : {jitter},
-    'fixed_parameters': {{
-        'headers' : {{'User-Agent': "{UA}", 'Cookie':"{cookie}"}},
-        'taskURIs' : "{taskURIs}",
-    }},
-    'send_func': {send_func},
-    'defaultResponse': "{defaultResponse}",
-    'lostLimit': {lostLimit},
-    'missedCheckins':0,
-}},
-#LISTENER_DICT
-"""
             f = open(self.mainMenu.installPath + "./data/agent/agent.py")
             code = f.read()
             f.close()
 
-            #patch in the listener_dict with usable data
-            
-            code = code.replace('#LISTENER_DICT',listener_dict.format(
-                send_func = "send_message_{}".format(listenerOptions['Name']['Value']),
-                delay = delay,
-                jitter = jitter,
-                UA = profile.split('|')[1],
-                cookie = self.options['Cookie']['Value'],
-                taskURIs = profile.split('|')[0],
-                lostLimit = lostLimit,
-                defaultResponse = b64DefaultResponse))
-
             # patch in the comms methods
             commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
-            code = code.replace('COMM_FUNCTION', commsCode)
+            code = code.replace('#LISTENER_DICT', commsCode[0])
+            code = code.replace('#COMM_FUNCTION', commsCode[1])
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -762,6 +736,15 @@ class Listener:
 
         This is so agents can easily be dynamically updated for the new listener.
         """
+
+        result = [] #array wihch will receive the listener data structure and the commCode itself
+
+        delay = listenerOptions['DefaultDelay']['Value']
+        jitter = listenerOptions['DefaultJitter']['Value']
+        profile = listenerOptions['DefaultProfile']['Value']
+        lostLimit = listenerOptions['DefaultLostLimit']['Value']
+        workingHours = listenerOptions['WorkingHours']['Value']
+        b64DefaultResponse = base64.b64encode(self.default_response())
 
         if language:
             if language.lower() == 'powershell':
@@ -866,6 +849,33 @@ class Listener:
                 if listenerOptions['Host']['Value'].startswith('https'):
                     updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None"
 
+                listener_dict = """
+{{
+    'delay' : {delay},
+    'jitter' : {jitter},
+    'fixed_parameters': {{
+        'headers' : {{'User-Agent': "{UA}", 'Cookie':"{cookie}"}},
+        'taskURIs' : "{taskURIs}",
+    }},
+    'send_func': {send_func},
+    'defaultResponse': "{defaultResponse}",
+    'lostLimit': {lostLimit},
+    'missedCheckins':0,
+}},
+#LISTENER_DICT
+"""
+            #patch in the listener_dict with usable data
+            
+                result.append(listener_dict.format(
+                    send_func = "send_message_{}".format(listenerOptions['Name']['Value']),
+                    delay = delay,
+                    jitter = jitter,
+                    UA = profile.split('|')[1],
+                    cookie = self.options['Cookie']['Value'],
+                    taskURIs = profile.split('|')[0],
+                    lostLimit = lostLimit,
+                    defaultResponse = b64DefaultResponse))
+
                 sendMessage = """
 def send_message_{name}(packets, **kwargs):
     # Requests a tasking or posts data to a randomized tasking URI.
@@ -912,7 +922,8 @@ def send_message_{name}(packets, **kwargs):
     return ('', '')
 #COMM_FUNCTION
 """
-                return sendMessage.format(name=listenerOptions['Name']['Value'], update_servers = updateServers)
+                result.append(sendMessage.format(name=listenerOptions['Name']['Value'], update_servers = updateServers))
+                return result
 
             else:
                 print helpers.color("[!] listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module.")
