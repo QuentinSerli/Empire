@@ -112,8 +112,8 @@ def send_message(data = None):
                 listener['missedCheckins'] = 0
             else:
                 decode_routing_packet(data)
-            
-            return
+
+            break           
 
         else: #update missedCheckins for this listener
             listener['missedCheckins'] += 1
