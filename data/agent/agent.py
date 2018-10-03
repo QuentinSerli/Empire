@@ -98,9 +98,9 @@ def send_message(data = None):
         time.sleep(sleepTime)
 
         #use the sending function defined in the listener dict
-        result = listener['send_func'](data, **listener['fixed_parameters'])
+        (code,data) = listener['send_func'](data, **listener['fixed_parameters'])
 
-        if result[0] == '200': #we got a message through
+        if code == '200': #we got a message through
 
             try:
                 send_job_message_buffer()
