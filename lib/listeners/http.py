@@ -748,6 +748,9 @@ class Listener:
             if workingHours != "":
                 code = code.replace('workingHours = ""', 'workingHours = "%s"' % (killDate))
 
+            with open("debug_agent_code.py","w") as fh:
+                fh.write(code)
+
             return code
         else:
             print helpers.color("[!] listeners/http generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module.")
