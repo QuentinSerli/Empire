@@ -717,6 +717,22 @@ class Listener:
             code = code.replace('#LISTENER_DICT', commsCode[0])
             code = code.replace('#COMM_FUNCTION', commsCode[1])
 
+            print "currently loaded listeners:",self.mainMenu.listeners.loadedListeners
+            print "httplistener:", self.mainMenu.listeners.loadedListeners['http']
+            #Should we generate for more than one listener?
+            if self.options['SupListeners']['Value'] != '':
+                listeners = self.options['SupListeners']['Value'].split(',')
+                loaded_listeners = self.mainMenu.listeners.activeListeners
+
+                #iterate through the listeners to retrieve options for each one and generate commCode
+                for l in listeners:
+                    curlistener = loaded_listeners[l]
+                    commsCode = curlistener.generate_comms(curlistener.options, language=language)
+                    code = code.replace('#LISTENER_DICT', commsCode[0])
+                    code = code.replace('#COMM_FUNCTION', commsCode[1])
+
+                    
+
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
 
