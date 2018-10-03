@@ -146,6 +146,11 @@ class Listener:
                 'Description'   :   'The Slack channel or DM that notifications will be sent to.',
                 'Required'      :   False,
                 'Value'         :   '#general'
+            },
+            'SupListeners': {
+                'Description'   :   'Names of the other Listeners the agent should beacon back to (eg: listener1,listener2,listener3)',
+                'Required'      :   False,
+                'Value'         :   ''
             }
         }
 
