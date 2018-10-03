@@ -58,6 +58,8 @@ _meta_cache = {}
 # communication methods
 #
 ################################################
+#COMM_FUNCTION
+
 listeners = [
 
 #LISTENER_DICT
@@ -75,7 +77,6 @@ listeners = [
 #    },
 ]
 
-#COMM_FUNCTION
 
 #def myfunc(data):
 #    #try to send data to listener example_listener
