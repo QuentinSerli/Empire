@@ -861,6 +861,7 @@ class Listener:
             elif language.lower() == 'python':
 
                 updateServers = "server = '%s'\n"  % (listenerOptions['Host']['Value'])
+                if updateServers.endswith("/"): updateServers = updateServers[0:-1]
 
                 if listenerOptions['Host']['Value'].startswith('https'):
                     updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None"
