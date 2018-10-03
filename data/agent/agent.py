@@ -98,7 +98,7 @@ def send_message(data = None):
         time.sleep(sleepTime)
 
         #use the sending function defined in the listener dict
-        result = listener['send_func'](packets = data, **listener['fixed_parameters'])
+        result = listener['send_func'](data, **listener['fixed_parameters'])
 
         if result[0] == '200': #we got a message through
 
