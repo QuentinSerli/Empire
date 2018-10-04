@@ -868,8 +868,10 @@ class Listener:
 
             elif language.lower() == 'python':
 
-                updateServers = "server = '%s'\n"  % (listenerOptions['Host']['Value']) if listenerOptions['Port']['Value'] = ''
-                    else "server = '{}:{}\n".format(listenrOptions['Host']['Value'], listenerOptions['Port']['Value'])
+                updateServers = "server = '%s'\n"  % (listenerOptions['Host']['Value']) \
+                    if listenerOptions['Port']['Value'] == '' or \
+                        listenerOptions['Port']['Value'] == '80' \
+                    else "server = '{}:{}'\n".format(listenerOptions['Host']['Value'], listenerOptions['Port']['Value'])
 
                 if updateServers.endswith("/"): updateServers = updateServers[0:-1]
 
