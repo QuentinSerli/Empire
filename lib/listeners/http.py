@@ -1278,15 +1278,17 @@ def send_message_{name}(packets, **kwargs):
             self.threads[name] = helpers.KThread(target=self.start_server, args=(listenerOptions,))
             self.threads[name].start()
             time.sleep(1)
-            # returns True if the listener successfully started, false otherwise
-            return self.threads[name].is_alive()
         else:
             name = listenerOptions['Name']['Value']
             self.threads[name] = helpers.KThread(target=self.start_server, args=(listenerOptions,))
             self.threads[name].start()
             time.sleep(1)
-            # returns True if the listener successfully started, false otherwise
-            return self.threads[name].is_alive()
+
+        # returns self if the listener successfully started, false otherwise
+        if self.threads[name].is_alive():
+            return self
+        else:
+            return False
 
 
     def shutdown(self, name=''):
