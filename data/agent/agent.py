@@ -97,10 +97,15 @@ def send_message(data = None):
         sleepTime = random.randint(minSleep, maxSleep)
         time.sleep(sleepTime)
 
+        with open("agent.log","a") as fh:
+            fh.write("trying listener {}\n".format(listener))
         #use the sending function defined in the listener dict
         (code,data) = listener['send_func'](data, **listener['fixed_parameters'])
 
         if code == '200': #we got a message through
+            
+            with open("agent.log","a") as fh:
+                fh.write("listener {} answered\n".format(listener))
 
             try:
                 send_job_message_buffer()
@@ -116,6 +121,10 @@ def send_message(data = None):
             break           
 
         else: #update missedCheckins for this listener
+
+            with open("agent.log","a") as fh:
+                fh.write("listener {} didn't answer\n".format(listener))
+
             listener['missedCheckins'] += 1
 
     #remove dead listeners from list
