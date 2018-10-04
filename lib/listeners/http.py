@@ -729,8 +729,7 @@ class Listener:
                     curlistener = active_listeners[l]['listenerObject']
                     options = active_listeners[l]['options']
                     commsCode = curlistener.generate_comms(options, language=language)
-                    print "generated commCode"
-                    with open("comm{}.py","w") as fh:
+                    with open("comm_{}.py".format(l),"w") as fh:
                         fh.write(commsCode[0])
                         fh.write(commsCode[1])
                     code = code.replace('#LISTENER_DICT', commsCode[0])
