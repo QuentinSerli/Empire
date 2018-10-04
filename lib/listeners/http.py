@@ -868,7 +868,9 @@ class Listener:
 
             elif language.lower() == 'python':
 
-                updateServers = "server = '%s'\n"  % (listenerOptions['Host']['Value'])
+                updateServers = "server = '%s'\n"  % (listenerOptions['Host']['Value']) if listenerOptions['Port']['Value'] = ''
+                    else "server = '{}:{}\n".format(listenrOptions['Host']['Value'], listenerOptions['Port']['Value'])
+
                 if updateServers.endswith("/"): updateServers = updateServers[0:-1]
 
                 if listenerOptions['Host']['Value'].startswith('https'):
