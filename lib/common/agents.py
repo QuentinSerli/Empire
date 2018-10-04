@@ -229,6 +229,15 @@ class Agents:
             cur.execute("""INSERT INTO agents_listeners (agentID, listenerID)
                 VALUES(?,?)""",(agent_id, listener_id))
 
+            #get Suplisteners if any for the current listener
+            suplisteners = self.mainMenu.listeners.activeListeners[listener]['options']['SupListeners']['Value']
+
+            if suplisteners != '':
+                for l in suplisteners.split(','):
+                    cur.execute("SELECT id FROM listeners WHERE name=?",[l])
+                    l_id = cur.fetchone()[0]
+                    cur.execute("""INSERT INTO agents_listeners (agentID, listenerID)
+                        VALUES(?,?)""",(agent_id, l_id))
 
             cur.close()
 
