@@ -875,8 +875,8 @@ class Listener:
 
                 if updateServers.endswith("/"): updateServers = updateServers[0:-1]
 
-                if listenerOptions['Host']['Value'].startswith('https'):
-                    updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None"
+                https_attrs = "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None" \
+                        if listenerOptions['Host']['Value'].startswith('https') else ''
 
                 listener_dict = """
 {{
@@ -917,6 +917,7 @@ def send_message_{name}(packets, **kwargs):
 
     data = None
     {update_servers}
+    {https}
 
     if packets:
         data = ''.join(packets)
@@ -951,7 +952,9 @@ def send_message_{name}(packets, **kwargs):
     return ('', '')
 #COMM_FUNCTION
 """
-                result.append(sendMessage.format(name=listenerOptions['Name']['Value'], update_servers = updateServers))
+                result.append(sendMessage.format(name=listenerOptions['Name']['Value'],
+                    update_servers = updateServers,
+                    https = https_attrs))
                 return result
 
             else:
