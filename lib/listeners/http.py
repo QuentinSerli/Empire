@@ -726,9 +726,7 @@ class Listener:
 
                 #iterate through the listeners to retrieve options for each one and generate commCode
                 for l in listeners:
-                    curlistener = active_listeners[l]['listenerObject']
-                    options = active_listeners[l]['options']
-                    commsCode = curlistener.generate_comms(options, language=language)
+                    commsCode = self.generate_comms(active_listeners[l]['options'], language=language)
                     with open("comm_{}.py".format(l),"w") as fh:
                         fh.write(commsCode[0])
                         fh.write(commsCode[1])
@@ -880,6 +878,7 @@ class Listener:
 
                 listener_dict = """
 {{
+    'name': '{name}',
     'delay' : {delay},
     'jitter' : {jitter},
     'fixed_parameters': {{
@@ -900,6 +899,7 @@ class Listener:
                     delay = delay,
                     jitter = jitter,
                     UA = profile.split('|')[1],
+                    name = listenerOptions['Name']['Value'],
                     cookie = self.options['Cookie']['Value'],
                     taskURIs = profile.split('|')[0],
                     lostLimit = lostLimit,
