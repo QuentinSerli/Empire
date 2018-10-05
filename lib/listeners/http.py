@@ -1142,6 +1142,7 @@ def send_message_{name}(packets, **kwargs):
                                     'message': message
                                 })
                                 dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+                                print "sending results: ",results
                                 return make_response(results, 200)
                         else:
                             # dispatcher.send("[!] Results are None...", sender='listeners/http')
