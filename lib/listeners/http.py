@@ -769,7 +769,21 @@ class Listener:
 
         if language:
             if language.lower() == 'powershell':
-
+                listener_dict = """
+{{
+    "delay" = {delay},
+    "jitter" = {jitter},
+    "profile"= "{profile}",
+    "fixed_parameters"= @{{
+        'headers' = @{{'User-Agent': "{UA}", 'Cookie':"{cookie}"}},
+        'taskURIs' = "{taskURIs}"}},
+    "send_func"= {send_func},
+    "lostLimit"= {lostLimit},
+    "missedCheckins"={missedCheckins},
+    "defaultResponse"={defaultResponse}
+}},
+#LISTENER_DICT
+"""
                 updateServers = """
                     $Script:ControlServers = @("%s");
                     $Script:ServerIndex = 0;
