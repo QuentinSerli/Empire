@@ -5,6 +5,9 @@ Main agent handling functionality for Empire.
 The Agents() class in instantiated in ./empire.py by the main menu and includes:
 
     get_db_connection()         - returns the empire.py:mainMenu database connection object
+    get_listener_id()           - returns a listener's id given it's name
+    get_listeners_names_agent() - returns listeners names given an agent id
+    get_agent_id()              - returns an agent's id given it's session_id
     is_agent_present()          - returns True if an agent is present in the self.agents cache
     add_agent()                 - adds an agent to the self.agents cache and the backend database
     remove_agent_db()           - removes an agent from the self.agents cache and the backend database
@@ -114,6 +117,44 @@ class Agents:
         self.lock.release()
         return self.mainMenu.conn
 
+    def get_listener_id(self, listenerName):
+        conn = self.get_db_connection()
+        try:
+            self.lock.acquire()
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM listeners WHERE name=?",[listenerName])
+            result = cur.fetchone()
+            cur.close()
+        finally:
+            self.lock.release()
+        return int(result[0])
+
+    def get_listeners_names_agents(self,agentID):
+        conn = self.get_db_connection()
+        try:
+            self.lock.acquire()
+            cur = conn.cursor()
+            cur.execute("""SELECT l.name FROM listeners as l
+                            INNER JOIN agents_listeners as al
+                            ON l.id = al.listenerID
+                         WHERE al.agentID=?""",[int(agentID)])
+            result = cur.fetchall()
+            cur.close()
+        finally:
+            self.lock.release()
+        return result
+
+    def get_agent_id(self, sessionID):
+        conn = self.get_db_connection()
+        try:
+            self.lock.acquire()
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM agents WHERE session_id=?",[sessionID])
+            result = cur.fetchone()
+            cur.close()
+        finally:
+            self.lock.release()
+        return int(result[0])
 
     ###############################################################
     #
@@ -143,6 +184,8 @@ class Agents:
         checkinTime = currentTime
         lastSeenTime = currentTime
 
+        listener_id = self.get_listener_id(listener)
+
         # generate a new key for this agent if one wasn't supplied
         if not sessionKey:
             sessionKey = encryption.generate_aes_key()
@@ -155,8 +198,38 @@ class Agents:
         try:
             self.lock.acquire()
             cur = conn.cursor()
+            
             # add the agent
-            cur.execute("INSERT INTO agents (name, session_id, delay, jitter, external_ip, session_key, nonce, checkin_time, lastseen_time, profile, kill_date, working_hours, lost_limit, listener, language) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (sessionID, sessionID, delay, jitter, externalIP, sessionKey, nonce, checkinTime, lastSeenTime, profile, killDate, workingHours, lostLimit, listener, language))
+            cur.execute("""INSERT INTO agents (
+                name, 
+                session_id, 
+                delay, 
+                jitter, 
+                external_ip, 
+                session_key, 
+                nonce, 
+                checkin_time, 
+                lastseen_time, 
+                profile, 
+                kill_date, 
+                working_hours, 
+                lost_limit, 
+                language) 
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", 
+                (sessionID, sessionID, delay, jitter, externalIP, sessionKey, nonce, checkinTime, lastSeenTime, profile, killDate, workingHours, lostLimit, language))
+
+            #get newly created agent's ID
+            #we are not using the dedicated function because we have already locked the database
+            cur.execute("SELECT id from agents where name = ?",[sessionID]);
+
+            #no duplicated names amongst agents
+            agent_id = cur.fetchone()[0]
+
+            #insert agent and listener into the agents_listeners table
+            cur.execute("""INSERT INTO agents_listeners (agentID, listenerID)
+                VALUES(?,?)""",(agent_id, listener_id))
+
+
             cur.close()
 
             # dispatch this event
@@ -199,7 +272,12 @@ class Agents:
 
             # remove the agent from the database
             cur = conn.cursor()
+            cur.execute("SELECT id FROM agents WHERE session_id LIKE ?",[sessionID])
+
+            agentId = cur.fetchone()[0]
+
             cur.execute("DELETE FROM agents WHERE session_id LIKE ?", [sessionID])
+            cur.execute("DELETE FROM agents_listeners WHERE agentID =  ?",[agentId])
             cur.close()
 
             # dispatch this event
@@ -440,7 +518,14 @@ class Agents:
             conn.row_factory = oldFactory
         finally:
             self.lock.release()
-
+        
+        for agent in results:
+            listeners = self.get_listeners_names_agents(agent['id'])
+            agent['listeners'] = ', '.join(
+                list(
+                    map(lambda listener_name_row: listener_name_row[0], listeners)
+                )    
+            )
         return results
 
 
@@ -770,11 +855,20 @@ class Agents:
         Return agent objects linked to a given listener name.
         """
 
+        listener_id = self.get_listener_lid(listenerName)
+
         conn = self.get_db_connection()
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("SELECT session_id FROM agents WHERE listener=?", [listenerName])
+
+            #get agents ids from agents_listeners
+            cur.execute("""SELECT a.session_id FROM
+                agents AS a
+                INNER JOIN agents_listeners as al
+                ON a.id = al.agentID
+                WHERE al.listenerID = ?""",[listener_id])
+
             results = cur.fetchall()
             cur.close()
         finally:
@@ -790,6 +884,7 @@ class Agents:
         Return agent names linked to the given listener name.
         """
 
+        listener_id = self.get_listener_id(listenerName)
         conn = self.get_db_connection()
 
         try:
@@ -797,7 +892,10 @@ class Agents:
             oldFactory = conn.row_factory
             conn.row_factory = helpers.dict_factory # return results as a dictionary
             cur = conn.cursor()
-            cur.execute("SELECT * FROM agents WHERE listener=?", [listenerName])
+
+            cur.execute("""SELECT * from agents WHERE id IN
+                (SELECT agentID FROM agents_listeners
+                    WHERE listenerID = ?)""",[listener_id])
             agents = cur.fetchall()
             cur.close()
             conn.row_factory = oldFactory
@@ -925,14 +1023,19 @@ class Agents:
 
     def update_agent_listener_db(self, sessionID, listenerName):
         """
-        Update the specified agent's linked listener name in the database.
+        Add the new listener to the agent in agents_listeners table
         """
+
+        listener_id = self.get_listener_id(listenerName)
+        agent_id = self.get_agent_id(sessionID)
 
         conn = self.get_db_connection()
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("UPDATE agents SET listener=? WHERE session_id=? OR name=?", [listenerName, sessionID, sessionID])
+            
+            cur.execute('''INSERT INTO agents_listeners(agentID,listenerID),
+                VALUES(?,?)''',(agent_id, listener_id))
             cur.close()
         finally:
             self.lock.release()
@@ -1166,6 +1269,8 @@ class Agents:
         returns a list of (sessionID, taskings) tuples
         """
 
+        listener_id = self.get_listener_id(listenerName)
+
         conn = self.get_db_connection()
         results = []
 
@@ -1174,7 +1279,11 @@ class Agents:
             oldFactory = conn.row_factory
             conn.row_factory = helpers.dict_factory # return results as a dictionary
             cur = conn.cursor()
-            cur.execute("SELECT session_id,listener,taskings FROM agents WHERE listener=? AND taskings IS NOT NULL", [listenerName])
+            cur.execute("""SELECT a.session_id,a.taskings 
+                FROM agents AS a
+                INNER JOIN agents_listeners AS al
+                    ON a.id = al.agentID
+                WHERE al.listenerID = ? AND a.taskings IS NOT NULL""", [listener_id])
             agents = cur.fetchall()
 
             for agent in agents:
