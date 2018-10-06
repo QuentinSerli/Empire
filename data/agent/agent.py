@@ -83,7 +83,7 @@ listeners = [
 
 curlistener = ''
 
-def send_message(data = None):
+def send_message(message = None):
     global listeners
     global curlistener
 
@@ -105,7 +105,7 @@ def send_message(data = None):
         with open("agent.log","a") as fh:
             fh.write("trying listener {}\n".format(listener['name']))
         #use the sending function defined in the listener dict
-        (code,data) = listener['send_func'](data, **listener['fixed_parameters'])
+        (code,data) = listener['send_func'](message, **listener['fixed_parameters'])
 
         if code == '200': #we got a message through
             try:
