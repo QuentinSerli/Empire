@@ -697,6 +697,10 @@ class Listener:
             # patch in the killDate and workingHours if they're specified
             if killDate != "":
                 code = code.replace('$KillDate,', "$KillDate = '" + str(killDate) + "',")
+
+            with open("debug_agent_code.ps1","w") as fh:
+                fh.write(code)
+
             if obfuscate:
                 code = helpers.obfuscate(self.mainMenu.installPath, code, obfuscationCommand=obfuscationCommand)
             return code
