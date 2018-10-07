@@ -778,6 +778,7 @@ class Listener:
         'headers' = @{{'User-Agent': "{UA}", 'Cookie':"{cookie}"}},
         'taskURIs' = "{taskURIs}"}},
     "send_func"= {send_func},
+    "get_task_func"={get_task_func},
     "lostLimit"= {lostLimit},
     "missedCheckins"={missedCheckins},
     "defaultResponse"={defaultResponse}
