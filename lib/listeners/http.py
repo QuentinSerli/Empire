@@ -606,6 +606,10 @@ class Listener:
 
             randomizedStager = ''
 
+            
+            with open("stage0","w") as fh:
+                fh.write(stager)
+
             for line in stager.split("\n"):
                 line = line.strip()
                 # skip commented line
