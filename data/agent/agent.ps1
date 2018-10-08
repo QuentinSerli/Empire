@@ -65,7 +65,6 @@ function Invoke-Empire {
     # Configuration data
     #
     ############################################################
-
     $Encoding = [System.Text.Encoding]::ASCII
     $HMAC = New-Object System.Security.Cryptography.HMACSHA256
 
@@ -782,7 +781,8 @@ function Invoke-Empire {
 	# send message function iterating through listeners
 	$script:SendMessage = {
 		param($Listener, $PacketData)
-		[string]::Format("called send message with data = {0}",$PacketData) >> ".\agent_debug.log"
+        "called send message" | Out-File "out.log" -Append -NoClobber
+        $PacketData | Out-File "out.log" -Append -NoClobber
 	}
 
 	$script:GetTask = {
@@ -1088,6 +1088,7 @@ function Invoke-Empire {
     #
     ############################################################
 
+    "inside invoke Empire" | Out-File "out.log" -Append -NoClobber;
     while ($True) {
 
         # check the kill date and lost limit, exiting and returning job output if either are past
