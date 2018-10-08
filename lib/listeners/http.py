@@ -796,7 +796,7 @@ class Listener:
     get_task_func= $script:{get_task_func}
     lostLimit= {lostLimit}
     missedCheckins={missedCheckins}
-    defaultResponse="{defaultResponse}"
+    defaultResponse=[System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String("{defaultResponse}"))
 }} 
 #LISTENER_DICT
 """.format(
