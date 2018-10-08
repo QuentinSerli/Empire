@@ -68,13 +68,8 @@ function Invoke-Empire {
     $Encoding = [System.Text.Encoding]::ASCII
     $HMAC = New-Object System.Security.Cryptography.HMACSHA256
 
-    $script:AgentDelay = $AgentDelay
-    $script:AgentJitter = $AgentJitter
-    $script:LostLimit = $LostLimit
-    $script:MissedCheckins = 0
     $script:ResultIDs = @{}
     $script:WorkingHours = $WorkingHours
-    $script:DefaultResponse = [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($DefaultResponse))
     $script:Proxy = $ProxySettings
     $script:CurrentListenerName = ""
 
