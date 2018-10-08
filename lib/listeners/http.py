@@ -778,20 +778,20 @@ class Listener:
     "fixed_parameters"= @{{
         'headers' = @{{'User-Agent': "{UA}", 'Cookie':"{cookie}"}},
         'taskURIs' = "{taskURIs}"}},
-    "send_func"= {send_func},
-    "get_task_func"={get_task_func},
+    "send_func"= $script:{send_func},
+    "get_task_func"= $script:{get_task_func},
     "lostLimit"= {lostLimit},
     "missedCheckins"={missedCheckins},
     "defaultResponse"={defaultResponse}
 }},
 #LISTENER_DICT
 """.format(
-           get_task_func = "GetTask{}".format(listeoerOptions['Name']['Value']),
+           get_task_func = "GetTask{}".format(listenerOptions['Name']['Value']),
            send_func = "SendMessage{}".format(listenerOptions['Name']['Value']),
            delay = delay,
            jitter = jitter,
            profile = profile,
-           listLimit = lostLimit,
+           lostLimit = lostLimit,
            missedCheckins = 0,
            defaultResponse = b64DefaultResponse,
            UA = profile.split('|')[1],
