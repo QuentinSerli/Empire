@@ -73,6 +73,8 @@ function Invoke-Empire {
     $script:Proxy = $ProxySettings
     $script:CurrentListenerName = ""
     $script:SessionID = $SessionID
+    $script:StagingKey = $StagingKey
+    $script:SessionKey = $SessionKey
 
     # the currently active server
     $Script:ServerIndex = 0
