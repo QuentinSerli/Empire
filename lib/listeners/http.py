@@ -775,19 +775,21 @@ class Listener:
         if language:
             if language.lower() == 'powershell':
                 listener_dict = """
-{{
-    "delay" = {delay},
-    "jitter" = {jitter},
-    "profile"= "{profile}",
-    "fixed_parameters"= @{{
-        'headers' = @{{'User-Agent': "{UA}", 'Cookie':"{cookie}"}},
-        'taskURIs' = "{taskURIs}"}},
-    "send_func"= $script:{send_func},
-    "get_task_func"= $script:{get_task_func},
-    "lostLimit"= {lostLimit},
-    "missedCheckins"={missedCheckins},
-    "defaultResponse"={defaultResponse}
-}},
+@{{
+    delay = {delay}
+    jitter = {jitter}
+    profile= "{profile}"
+    fixed_parameters= @{{
+        headers = @{{UserAgent= "{UA}"
+                     Cookie="{cookie}"}}
+        taskURIs = "{taskURIs}"
+        }}
+    send_func= $script:{send_func}
+    get_task_func= $script:{get_task_func}
+    lostLimit= {lostLimit}
+    missedCheckins={missedCheckins}
+    defaultResponse={defaultResponse}
+}} 
 #LISTENER_DICT
 """.format(
            get_task_func = "GetTask{}".format(listenerOptions['Name']['Value']),
