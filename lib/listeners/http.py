@@ -783,8 +783,6 @@ class Listener:
         This is so agents can easily be dynamically updated for the new listener.
         """
 
-        result = [] #array wihch will receive the listener data structure and the commCode itself
-
         delay = listenerOptions['DefaultDelay']['Value']
         jitter = listenerOptions['DefaultJitter']['Value']
         profile = listenerOptions['DefaultProfile']['Value']
@@ -1026,10 +1024,9 @@ def send_message_{name}(packets, **kwargs):
     return ('', '')
 #COMM_FUNCTION
 """
-                result.append(sendMessage.format(name=listenerOptions['Name']['Value'],
+                return(sendMessage.format(name=listenerOptions['Name']['Value'],
                     update_servers = updateServers,
                     https = https_attrs))
-                return result
 
             else:
                 print helpers.color("[!] listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module.")
