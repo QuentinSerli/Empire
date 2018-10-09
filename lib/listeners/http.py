@@ -706,6 +706,7 @@ class Listener:
             #Should we generate for more than one listener?
             if self.options['SupListeners']['Value'] != '':
                 listeners = self.options['SupListeners']['Value'].split(',')
+                print "looking at listeners:",listeners
                 active_listeners = self.mainMenu.listeners.activeListeners
 
                 #iterate through the listeners to retrieve options for each one and generate commCode
