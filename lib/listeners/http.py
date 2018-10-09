@@ -966,18 +966,6 @@ class Listener:
 }},
 #LISTENER_DICT
 """
-            #patch in the listener_dict with usable data
-            
-                result.append(listener_dict.format(
-                    send_func = "send_message_{}".format(listenerOptions['Name']['Value']),
-                    delay = delay,
-                    jitter = jitter,
-                    UA = profile.split('|')[1],
-                    name = listenerOptions['Name']['Value'],
-                    cookie = self.options['Cookie']['Value'],
-                    taskURIs = profile.split('|')[0],
-                    lostLimit = lostLimit,
-                    defaultResponse = b64DefaultResponse))
 
                 sendMessage = """
 def send_message_{name}(packets, **kwargs):
@@ -1026,9 +1014,19 @@ def send_message_{name}(packets, **kwargs):
     return ('', '')
 #COMM_FUNCTION
 """
-                return(sendMessage.format(name=listenerOptions['Name']['Value'],
-                    update_servers = updateServers,
-                    https = https_attrs))
+                return( listener_dict.format(
+                            send_func = "send_message_{}".format(listenerOptions['Name']['Value']),
+                            delay = delay,
+                            jitter = jitter,
+                            UA = profile.split('|')[1],
+                            name = listenerOptions['Name']['Value'],
+                            cookie = self.options['Cookie']['Value'],
+                            taskURIs = profile.split('|')[0],
+                            lostLimit = lostLimit,
+                            defaultResponse = b64DefaultResponse),
+                        sendMessage.format(name=listenerOptions['Name']['Value'],
+                            update_servers = updateServers,
+                            https = https_attrs))
 
             else:
                 print helpers.color("[!] listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module.")
