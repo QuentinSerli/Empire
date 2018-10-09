@@ -876,6 +876,7 @@ class Listener:
                             }}
                         }}
                     }}
+#TASK_FUNCTION
                 """
 
                 sendMessage = """
@@ -930,6 +931,7 @@ class Listener:
                             }}
                         }}
                     }}
+#COMM_FUNCTION
                 """
 
                 return (listener_dict,
