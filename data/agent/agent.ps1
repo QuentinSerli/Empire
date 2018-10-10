@@ -1053,13 +1053,6 @@ function Invoke-Empire {
                 }
             }
 
-            elseif($type -eq 131) {
-                # Update the listener name variable
-                $script:CurrentListenerName = $data
-
-                Encode-Packet -type $type -data ("Updated the CurrentListenerName to: $CurrentListenerName") -ResultID $ResultID
-            }
-
             else{
                 Encode-Packet -type 0 -data "invalid type: $type" -ResultID $ResultID
             }
