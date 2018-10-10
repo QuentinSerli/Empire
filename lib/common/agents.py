@@ -40,6 +40,7 @@ The Agents() class in instantiated in ./empire.py by the main menu and includes:
     update_agent_listener_db()  - updates the agent's listener name in the database
     rename_agent()              - renames an agent
     set_agent_field_db()        - sets field:value for a particular sessionID in the database.
+    set_agent_listener_fld_db()  - sets field:value in agents_listeners for a particular sessionID in the database.
     set_agent_functions_db()    - sets the tab-completable functions for the agent in the database
     set_autoruns_db()           - sets the global script autorun in the config in the database
     clear_autoruns_db()         - clears the currently set global script autoruns in the config in the database
@@ -1090,6 +1091,14 @@ class Agents:
         self.save_agent_log(oldname, "[*] Agent renamed from %s to %s" % (oldname, newname))
 
         return retVal
+
+    def set_agent_listener_fld_db(self, field,value, sessionID):
+        conn = self.get_db_connection()
+        cur = conn.cursor()
+        
+        agent_id = self.get_agent_id(sessionID)
+        cur.execute("UPDATE agents_listeners SET " + str(field) + "=? WHERE agentID = ?",[value,agent_id])
+        cur.close()
 
     def set_agent_field_db(self, field, value, sessionID):
         """
