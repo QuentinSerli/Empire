@@ -1108,12 +1108,14 @@ class Agents:
 
         return retVal
 
-    def set_agent_listener_fld_db(self, field,value, sessionID):
+    def set_agent_listener_fld_db(self, field,value, sessionID, listenerName):
         conn = self.get_db_connection()
         cur = conn.cursor()
         
         agent_id = self.get_agent_id(sessionID)
-        cur.execute("UPDATE agents_listeners SET " + str(field) + "=? WHERE agentID = ?",[value,agent_id])
+        listener_id = self.get_listener_id(listenerName)
+
+        cur.execute("UPDATE agents_listeners SET " + str(field) + "=? WHERE agentID = ? and listenerID = ?",[value,agent_id,listener_id])
         cur.close()
 
     def set_agent_field_db(self, field, value, sessionID):
