@@ -2379,10 +2379,9 @@ class PowerShellAgentMenu(SubMenu):
                 activeListener = self.mainMenu.listeners.activeListeners[listenerID]
                 if activeListener['moduleName'] != 'meterpreter' or activeListener['moduleName'] != 'http_mapi':
                     listenerOptions = activeListener['options']
-                    listenerComms = self.mainMenu.listeners.loadedListeners[activeListener['moduleName']].generate_comms(listenerOptions, language="powershell")
+                    listenerComms = self.mainMenu.listeners.loadedListeners[activeListener['moduleName']].generate_comms(listenerOptions, language="powershell", deployed = True)
 
                     self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_UPDATE_LISTENERNAME", listenerOptions['Name']['Value'])
-                    self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SWITCH_LISTENER", listenerComms)
                     
                     msg = "Tasked agent to update comms to %s listener" % listenerID
                     self.mainMenu.agents.save_agent_log(self.sessionID, msg)
