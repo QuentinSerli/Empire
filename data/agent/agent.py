@@ -1070,6 +1070,18 @@ def set_delay_jitter(listenerName, delay, jitter):
             l["delay"] = delay
             l["jitter"] = jitter
             break
+
+def print_lost_limits():
+    global listeners
+    for l in listeners:
+        print "{}: {}".format(l["name"],l["lostLimit"])
+
+def set_lost_limit(listener,newlimit):
+    global listeners:
+    for l in listeners:
+        if l["name"] == listener:
+            l["lostLimit"] = newlimit
+            break
 ################################################
 #
 # main agent functionality
