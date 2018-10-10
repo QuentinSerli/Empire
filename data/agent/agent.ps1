@@ -136,10 +136,20 @@ function Invoke-Empire {
     }
 
     function Set-Delay {
-        param([int]$d, [double]$j=0.0)
-        $script:AgentDelay = $d
-        $script:AgentJitter = $j
-        "agent interval set to $script:AgentDelay seconds with a jitter of $script:AgentJitter"
+        param($listenerName, [int]$d, [double]$j=0.0)
+        foreach ($l in $script:listeners) {
+            if ($l["name"] -eq $listenerName) {
+
+                $l["delay"] = $d
+                $l["jitter"] = $j
+
+                "agent interval set to $d seconds with a jitter of $j for listener"
+                $listenername
+
+                break
+            }
+        }
+
     }
 
     function Get-Delay {
