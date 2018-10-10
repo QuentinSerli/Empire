@@ -443,7 +443,7 @@ class Listener:
                 """ % (listenerOptions['Host']['Value'])
 
                 getTask = """
-                    $script:GetTask = {{
+                    $script:GetTask{name} = {{
                         try {{
                                 param($FixedParameters)
                                 $ControlServers = {ControlServers};
@@ -487,10 +487,11 @@ class Listener:
                         }}
                         while(($fldel.Items | measure | %{{$_.Count}}) -gt 0 ){{ $fldel.Items | %{{$_.delete()}};}}
                     }}
+                #TASK_FUNCTION
                 """
 
                 sendMessage = """
-                    $script:SendMessage = {{
+                    $script:SendMessage{name} = {{
                         param($Packets,$FixedParameters)
                         $ControlServers = {ControlServers};
                         $ServerIndex = 0;
@@ -518,6 +519,7 @@ class Listener:
                                 while(($fldel.Items | measure | %{{$_.Count}}) -gt 0 ){{ $fldel.Items | %{{$_.delete()}};}}
                         }}
                     }}
+                #COMM_FUNCTION
                 """
                 if deployed:
                     return ( "$script:NewListenerDict = {};".format(listener_dict) +
