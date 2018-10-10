@@ -691,6 +691,13 @@ class Listener:
         workingHours = listenerOptions['WorkingHours']['Value']
         b64DefaultResponse = base64.b64encode(self.default_response())
 
+        active_listeners = self.mainMenu.listeners.activeListeners
+        loaded_listeners = self.mainMenu.listeners.loadedListeners
+
+        #Should we generate for more than one listener?
+        if self.options['SupListeners']['Value'] != '':
+            listeners = self.options['SupListeners']['Value'].split(',')
+
         if language == 'powershell':
 
             f = open(self.mainMenu.installPath + "./data/agent/agent.ps1")
@@ -703,18 +710,14 @@ class Listener:
                    .replace('#COMM_FUNCTION', commsCode[1])\
                    .replace('#TASK_FUNCTION',commsCode[2])
 
-            #Should we generate for more than one listener?
-            if self.options['SupListeners']['Value'] != '':
-                listeners = self.options['SupListeners']['Value'].split(',')
-                print "looking at listeners:",listeners
-                active_listeners = self.mainMenu.listeners.activeListeners
 
-                #iterate through the listeners to retrieve options for each one and generate commCode
-                for l in listeners:
-                    commsCode = self.generate_comms(listenerOptions = active_listeners[l]['options'], language=language)
-                    code = code.replace('#LISTENER_DICT', commsCode[0])\
-                           .replace('#COMM_FUNCTION', commsCode[1])\
-                           .replace('#TASK_FUNCTION',commsCode[2])
+            #iterate through the listeners to retrieve options for each one and generate commCode
+            for l in listeners:
+                loadedlistener = loaded_listeners[active_listeners[l]["moduleName"]]
+                commsCode = loadedlistener.generate_comms(listenerOptions = active_listeners[l]['options'], language=language)
+                code = code.replace('#LISTENER_DICT', commsCode[0])\
+                       .replace('#COMM_FUNCTION', commsCode[1])\
+                       .replace('#TASK_FUNCTION',commsCode[2])
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
@@ -740,21 +743,13 @@ class Listener:
             code = code.replace('#LISTENER_DICT', commsCode[0])
             code = code.replace('#COMM_FUNCTION', commsCode[1])
 
-            print "currently loaded listeners:",self.mainMenu.listeners.activeListeners
-            #Should we generate for more than one listener?
-            if self.options['SupListeners']['Value'] != '':
-                listeners = self.options['SupListeners']['Value'].split(',')
-                print "looking at listeners:",listeners
-                active_listeners = self.mainMenu.listeners.activeListeners
+            #iterate through the listeners to retrieve options for each one and generate commCode
+            for l in listeners:
+                loadedlistener = loaded_listeners[active_listeners[l]["moduleName"]]
+                commsCode = loadedlistener.generate_comms(listenerOptions = active_listeners[l]['options'], language=language)
 
-                #iterate through the listeners to retrieve options for each one and generate commCode
-                for l in listeners:
-                    commsCode = self.generate_comms(listenerOptions = active_listeners[l]['options'], language=language)
-                    with open("comm_{}.py".format(l),"w") as fh:
-                        fh.write(commsCode[0])
-                        fh.write(commsCode[1])
-                    code = code.replace('#LISTENER_DICT', commsCode[0])
-                    code = code.replace('#COMM_FUNCTION', commsCode[1])
+                code = code.replace('#LISTENER_DICT', commsCode[0])
+                code = code.replace('#COMM_FUNCTION', commsCode[1])
 
                     
 
