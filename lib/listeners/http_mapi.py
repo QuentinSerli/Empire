@@ -123,6 +123,12 @@ class Listener:
                 'Required'      :   False,
                 'Value'         :   '#general'
             }
+            'SupListeners': {
+                'Description'   :   'Names of the other Listeners the agent should beacon back to (eg: listener1,listener2,listener3)',
+                'Required'      :   False,
+                'Value'         :   ''
+            }
+
         }
 
         # required:
@@ -358,8 +364,22 @@ class Listener:
 
             # patch in the comms methods
             commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
-            commsCode = commsCode.replace('REPLACE_FOLDER',folder)
-            code = code.replace('REPLACE_COMMS', commsCode)
+            code = code.replace('#LISTENER_DICT', commsCode[0])\
+                   .replace('#COMM_FUNCTION', commsCode[1])\
+                   .replace('#TASK_FUNCTION',commsCode[2])
+
+            #Should we generate for more than one listener?
+            if self.options['SupListeners']['Value'] != '':
+                listeners = self.options['SupListeners']['Value'].split(',')
+                active_listeners = self.mainMenu.listeners.activeListeners
+                loaded_listeners = self.mainMenu.listeners.loadedListeners
+                #iterate through the listeners to retrieve options for each one and generate commCode
+                for l in listeners:
+                    loadedlistener = loaded_listeners[active_listeners[l]["moduleName"]]
+                    commsCode = loadedlistener.generate_comms(listenerOptions = active_listeners[l]['options'], language=language)
+                    code = code.replace('#LISTENER_DICT', commsCode[0])\
+                           .replace('#COMM_FUNCTION', commsCode[1])\
+                           .replace('#TASK_FUNCTION',commsCode[2])
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
