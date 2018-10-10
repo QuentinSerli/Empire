@@ -523,12 +523,15 @@ class Listener:
             print helpers.color("[!] listeners/http_com generate_agent(): invalid language specification, only 'powershell' is currently supported for this module.")
 
 
-    def generate_comms(self, listenerOptions, language=None):
+    def generate_comms(self, listenerOptions, language=None, **kwargs):
         """
         Generate just the agent communication code block needed for communications with this listener.
 
         This is so agents can easily be dynamically updated for the new listener.
         """
+
+        #we are generating code for an already deployed agent
+        deployed = "deployed" in kwargs
 
         delay = listenerOptions['DefaultDelay']['Value']
         jitter = listenerOptions['DefaultJitter']['Value']
@@ -665,12 +668,17 @@ class Listener:
                     }}
                 #COMM_FUNCTION
                 """
+                if deployed:
+                    return ( "$script:NewListenerDict = {};".format(listener_dict) +
+                            getTask.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']) +
+                            sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
 
-                return (listener_dict,
-                        getTask.format(ControlServers = updateServers,
-                                       name = listenerOptions['Name']['Value'],
-                                       reqheader = listenerOptions['RequestHeader']['Value']),
-                        sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
+                else:
+                    return (listener_dict,
+                            getTask.format(ControlServers = updateServers,
+                                           name = listenerOptions['Name']['Value'],
+                                           reqheader = listenerOptions['RequestHeader']['Value']),
+                            sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
 
             else:
                 print helpers.color("[!] listeners/http_com generate_comms(): invalid language specification, only 'powershell' is currently supported for this module.")
