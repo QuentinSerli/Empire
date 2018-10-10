@@ -1381,23 +1381,24 @@ class AgentsMenu(SubMenu):
 
 
     def do_lostlimit(self, line):
-        "Task one or more agents to 'lostlimit [agent/all] [number of missed callbacks] '"
+        "Task one or more agents to 'lostlimit [agent/all] listenerName [number of missed callbacks] '"
 
         parts = line.strip().split(' ')
 
         if len(parts) == 1:
-            print helpers.color("[!] Usage: 'lostlimit [agent/all] [number of missed callbacks]")
+            print helpers.color("[!] Usage: 'lostlimit [agent/all] listenername [number of missed callbacks]")
 
         elif parts[0].lower() == 'all':
-            lostLimit = parts[1]
-            allAgents = self.mainMenu.agents.get_agents_db()
+            listenerName = parts[1]
+            lostLimit = parts[2]
+            allAgents = self.mainMenu.agents.get_agents_for_listener(listenerName)
 
             for agent in allAgents:
                 sessionID = agent['session_id']
                 # update this agent info in the database
-                self.mainMenu.agents.set_agent_field_db('lost_limit', lostLimit, sessionID)
+                self.mainMenu.agents.set_agent_listener_fld_db('lost_limit', lostLimit, sessionID, listenerName)
                 # task the agent
-                self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_SHELL', 'Set-LostLimit ' + str(lostLimit))
+                self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_SHELL', 'Set-LostLimit ' + str(listenerName) + ' ' + str(lostLimit))
 
                 # dispatch this event
                 message = "[*] Tasked agent to change lost limit {}".format(lostLimit)
@@ -1414,13 +1415,14 @@ class AgentsMenu(SubMenu):
         else:
             # extract the sessionID and clear the agent tasking
             sessionID = self.mainMenu.agents.get_agent_id_db(parts[0])
-            lostLimit = parts[1]
+            listenerName = pars [1]
+            lostLimit = parts[2]
 
             if sessionID and len(sessionID) != 0:
                 # update this agent's information in the database
-                self.mainMenu.agents.set_agent_field_db('lost_limit', lostLimit, sessionID)
+                self.mainMenu.agents.set_agent_listener_fld_db('lost_limit', lostLimit, sessionID,listenerName)
 
-                self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_SHELL', 'Set-LostLimit ' + str(lostLimit))
+                self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_SHELL', 'Set-LostLimit ' + str(listenerName) + ' ' + str(lostLimit))
 
                 # dispatch this event
                 message = "[*] Tasked agent to change lost limit {}".format(lostLimit)
@@ -1962,21 +1964,22 @@ class PowerShellAgentMenu(SubMenu):
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to stop job " + str(jobID))
 
     def do_sleep(self, line):
-        "Task an agent to 'sleep interval [jitter]'"
+        "Task an agent to 'sleep listener interval [jitter]'"
 
         parts = line.strip().split(' ')
 
         if len(parts) > 0 and parts[0] != "":
-            delay = parts[0]
+            listener = parts[0]
+            delay = parts[1]
             jitter = 0.0
-            if len(parts) == 2:
-                jitter = parts[1]
+            if len(parts) == 3:
+                jitter = parts[2]
 
             # update this agent's information in the database
-            self.mainMenu.agents.set_agent_field_db("delay", delay, self.sessionID)
-            self.mainMenu.agents.set_agent_field_db("jitter", jitter, self.sessionID)
+            self.mainMenu.agents.set_agent_listener_fld_db("delay", delay, self.sessionID,listener)
+            self.mainMenu.agents.set_agent_listener_db("jitter", jitter, self.sessionID,listener)
 
-            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Set-Delay " + str(delay) + ' ' + str(jitter))
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Set-Delay " + str(listener) + ' ' + str(delay) + ' ' + str(jitter))
 
             # dispatch this event
             message = "[*] Tasked agent to delay sleep/jitter {}/{}".format(delay, jitter)
