@@ -6,7 +6,7 @@ The Agents() class in instantiated in ./empire.py by the main menu and includes:
 
     get_db_connection()         - returns the empire.py:mainMenu database connection object
     get_listener_id()           - returns a listener's id given it's name
-    get_listeners_names_agent() - returns listeners names given an agent id
+    get_listeners_agent()       - returns agents_listeners rows given an agent id
     get_agent_id()              - returns an agent's id given it's session_id
     is_agent_present()          - returns True if an agent is present in the self.agents cache
     add_agent()                 - adds an agent to the self.agents cache and the backend database
@@ -129,12 +129,12 @@ class Agents:
             self.lock.release()
         return int(result[0])
 
-    def get_listeners_names_agents(self,agentID):
+    def get_listeners_agents(self,agentID):
         conn = self.get_db_connection()
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("""SELECT l.name FROM listeners as l
+            cur.execute("""SELECT l.name, al.delay, al.jitter, al.lost_limit FROM listeners as l
                             INNER JOIN agents_listeners as al
                             ON l.id = al.listenerID
                          WHERE al.agentID=?""",[int(agentID)])
