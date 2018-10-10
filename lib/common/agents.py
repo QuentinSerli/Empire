@@ -537,19 +537,19 @@ class Agents:
 
             agent["delay"] = ', '.join(
                 list(
-                    map(lambda listener_row: listener_row[1], listeners)
+                    map(lambda listener_row: str(listener_row[1]), listeners)
                 )
             )
 
             agent["jitter"] = ', '.join(
                 list(
-                    map(lambda listener_row: listener_row[2], listeners)
+                    map(lambda listener_row: str(listener_row[2]), listeners)
                 )
             )
 
             agent["lostLimit"] = ', '.join(
                 list(
-                    map(lambda listener_row: listener_row[3], listeners)
+                    map(lambda listener_row: str(listener_row[3]), listeners)
                 )
             )
         return results
