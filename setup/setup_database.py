@@ -93,8 +93,6 @@ c.execute('''CREATE TABLE "agents" (
     "name" text,
     "language" text,
     "language_version" text,
-    "delay" integer,
-    "jitter" real,
     "external_ip" text,
     "internal_ip" text,
     "username" text,
@@ -114,7 +112,6 @@ c.execute('''CREATE TABLE "agents" (
     "functions" text,
     "kill_date" text,
     "working_hours" text,
-    "lost_limit" integer,
     "taskings" text,
     "results" text
     )''')
@@ -134,6 +131,9 @@ c.execute('''CREATE TABLE "listeners" (
 c.execute('''CREATE TABLE "agents_listeners" (
     "agentID" integer,
     "listenerID" integer,
+    "lost_limit" integer,
+    "delay" integer,
+    "jitter" integer,
      FOREIGN KEY(agentID) REFERENCES agents(id) ON DELETE CASCADE,
      FOREIGN KEY(listenerID) REFERENCES listeners(id) ON DELETE CASCADE,
      PRIMARY KEY(agentID,listenerID)
