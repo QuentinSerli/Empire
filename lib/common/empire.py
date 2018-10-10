@@ -3015,14 +3015,14 @@ class PythonAgentMenu(SubMenu):
 
 
     def do_lostlimit(self, line):
-        "Task an agent to display change the limit on lost agent detection"
+        "Task an agent to display change the limit on lost agent detection for listener: lostlimit [listener newvalue]"
 
         parts = line.strip().split(' ')
         lostLimit = parts[0]
 
         if lostLimit == "":
             # task the agent to display the lostLimit
-            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global lostLimit; print 'lostLimit = ' + str(lostLimit)")
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "print_lost_limits()")
 
             # dispatch this event
             message = "[*] Tasked agent to display lost limit"
@@ -3034,14 +3034,17 @@ class PythonAgentMenu(SubMenu):
 
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to display lost limit")
         else:
+            listener = parts[0]
+            lostLimit = parts[1]
+
             # update this agent's information in the database
-            self.mainMenu.agents.set_agent_field_db("lost_limit", lostLimit, self.sessionID)
+            self.mainMenu.agents.set_agent_listener_fld_db("lost_limit", lostLimit, self.sessionID,listener)
 
             # task the agent with the new lostLimit
-            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global lostLimit; lostLimit=%s; print 'lostLimit set to %s'"%(lostLimit, lostLimit))
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "set_lost_limit('{}',{})".format(listener,lostLimit))
 
             # dispatch this event
-            message = "[*] Tasked agent to change lost limit {}".format(lostLimit)
+            message = "[*] Tasked agent to change lost limit {} for listener {}".format(lostLimit,listener)
             signal = json.dumps({
                 'print': False,
                 'message': message
