@@ -1058,6 +1058,18 @@ def get_file_part(filePath, offset=0, chunkSize=512000, base64=True):
     else:
         return data
 
+def print_delay_jitter():
+    global listeners
+    for l in listeners :
+        print "{}: {}/{}".format(l["name"],l["delay"],l["jitter"])
+
+def set_delay_jitter(listenerName, delay, jitter):
+    global listeners
+    for l in listeners:
+        if l["name"] == listenerName:
+            l["delay"] = delay
+            l["jitter"] = jitter
+            break
 ################################################
 #
 # main agent functionality
