@@ -832,7 +832,6 @@ class Listener:
                         param($FixedParameters)
                         $ControlServers = {ControlServers};
                         $ServerIndex = 0;
-                        "inside gettask before try"|Out-File "out.log" -Append -NoClobber
                         try {{
                             if ($ControlServers[$ServerIndex].StartsWith("http")) {{
                                 "if contrlserver startwith http" |Out-File "out.log" -Append -NoClobber
