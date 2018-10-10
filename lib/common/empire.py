@@ -2956,7 +2956,7 @@ class PythonAgentMenu(SubMenu):
 
 
     def do_sleep(self, line):
-        "Task an agent to 'sleep interval [jitter]'"
+        "Task an agent to 'sleep interval [ listenerName jitter]'"
 
         parts = line.strip().split(' ')
         delay = parts[0]
@@ -2978,7 +2978,7 @@ class PythonAgentMenu(SubMenu):
 
         if delay == "":
             # task the agent to display the delay/jitter
-            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global delay; global jitter; print 'delay/jitter = ' + str(delay)+'/'+str(jitter)")
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "print_delay_jitter()")
 
             # dispatch this event
             message = "[*] Tasked agent to display delay/jitter"
@@ -2990,17 +2990,16 @@ class PythonAgentMenu(SubMenu):
 
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to display delay/jitter")
 
-        elif len(parts) > 0 and parts[0] != "":
+        elif len(parts) > 2 and parts[0] != "":
             delay = parts[0]
-            jitter = 0.0
-            if len(parts) == 2:
-                jitter = parts[1]
+            jitter = parts[2]
+            listenerName = parts[1]
 
             # update this agent's information in the database
-            self.mainMenu.agents.set_agent_field_db("delay", delay, self.sessionID)
-            self.mainMenu.agents.set_agent_field_db("jitter", jitter, self.sessionID)
+            self.mainMenu.agents.set_agent_listener_fld_db("delay", delay, self.sessionID, listenerName)
+            self.mainMenu.agents.set_agent_listener_fld_db("jitter", jitter, self.sessionID, listenerName)
 
-            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global delay; global jitter; delay=%s; jitter=%s; print 'delay/jitter set to %s/%s'" % (delay, jitter, delay, jitter))
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "set_delay_jitter('{}',{},{})".format(listenerName,delay,jitter))
 
             # dispatch this event
             message = "[*] Tasked agent to delay sleep/jitter {}/{}".format(delay, jitter)
