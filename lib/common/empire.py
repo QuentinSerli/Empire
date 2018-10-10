@@ -1992,18 +1992,19 @@ class PowerShellAgentMenu(SubMenu):
 
 
     def do_lostlimit(self, line):
-        "Task an agent to change the limit on lost agent detection"
+        "Task an agent to change the limit on lost agent detection, syntax: 'lostlimit listener newvalue'"
 
         parts = line.strip().split(' ')
-        if len(parts) > 0 and parts[0] != "":
-            lostLimit = parts[0]
+        if len(parts) > 1 and parts[0] != "":
+            listener = parts[0]
+            lostLimit = parts[1]
 
         # update this agent's information in the database
-        self.mainMenu.agents.set_agent_field_db("lost_limit", lostLimit, self.sessionID)
-        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Set-LostLimit " + str(lostLimit))
+        self.mainMenu.agents.set_agent_listener_fld_db("lost_limit", lostLimit, self.sessionID)
+        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Set-LostLimit " + str(lostLimit) +" "+str(listener))
 
         # dispatch this event
-        message = "[*] Tasked agent to change lost limit {}".format(lostLimit)
+        message = "[*] Tasked agent to change lost limit {} for listener {}".format(lostLimit,listener)
         signal = json.dumps({
             'print': False,
             'message': message
