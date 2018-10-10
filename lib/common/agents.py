@@ -204,8 +204,6 @@ class Agents:
             cur.execute("""INSERT INTO agents (
                 name, 
                 session_id, 
-                delay, 
-                jitter, 
                 external_ip, 
                 session_key, 
                 nonce, 
@@ -214,10 +212,9 @@ class Agents:
                 profile, 
                 kill_date, 
                 working_hours, 
-                lost_limit, 
                 language) 
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", 
-                (sessionID, sessionID, delay, jitter, externalIP, sessionKey, nonce, checkinTime, lastSeenTime, profile, killDate, workingHours, lostLimit, language))
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)""", 
+                (sessionID, sessionID, externalIP, sessionKey, nonce, checkinTime, lastSeenTime, profile, killDate, workingHours, language))
 
             #get newly created agent's ID
             #we are not using the dedicated function because we have already locked the database
@@ -227,8 +224,8 @@ class Agents:
             agent_id = cur.fetchone()[0]
 
             #insert agent and listener into the agents_listeners table
-            cur.execute("""INSERT INTO agents_listeners (agentID, listenerID)
-                VALUES(?,?)""",(agent_id, listener_id))
+            cur.execute("""INSERT INTO agents_listeners (agentID, listenerID,lost_limit,delay,jitter)
+                VALUES(?,?,?,?,?)""",(agent_id, listener_id,lostLimit,delay,jitter))
 
             #get Suplisteners if any for the current listener
             suplisteners = self.mainMenu.listeners.activeListeners[listener]['options']['SupListeners']['Value']
@@ -237,8 +234,8 @@ class Agents:
                 for l in suplisteners.split(','):
                     cur.execute("SELECT id FROM listeners WHERE name=?",[l])
                     l_id = cur.fetchone()[0]
-                    cur.execute("""INSERT INTO agents_listeners (agentID, listenerID)
-                        VALUES(?,?)""",(agent_id, l_id))
+                    cur.execute("""INSERT INTO agents_listeners (agentID, listenerID, lost_limit,delay,jitter)
+                        VALUES(?,?,?,?,?)""",(agent_id, l_id, lost_limit,delay,jitter))
 
             cur.close()
 
