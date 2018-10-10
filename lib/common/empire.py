@@ -2001,7 +2001,7 @@ class PowerShellAgentMenu(SubMenu):
 
         # update this agent's information in the database
         self.mainMenu.agents.set_agent_listener_fld_db("lost_limit", lostLimit, self.sessionID)
-        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Set-LostLimit " + str(lostLimit) +" "+str(listener))
+        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Set-LostLimit " + str(listener) +" "+str(lostLimit))
 
         # dispatch this event
         message = "[*] Tasked agent to change lost limit {} for listener {}".format(lostLimit,listener)
