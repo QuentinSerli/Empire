@@ -527,11 +527,30 @@ class Agents:
             self.lock.release()
         
         for agent in results:
-            listeners = self.get_listeners_names_agents(agent['id'])
+            listeners = self.get_listeners_agents(agent['id'])
+
             agent['listeners'] = ', '.join(
                 list(
-                    map(lambda listener_name_row: listener_name_row[0], listeners)
+                    map(lambda listener_row: listener_row[0], listeners)
                 )    
+            )
+
+            agent["delay"] = ', '.join(
+                list(
+                    map(lambda listener_row: listener_row[1], listeners)
+                )
+            )
+
+            agent["jitter"] = ', '.join(
+                list(
+                    map(lambda listener_row: listener_row[2], listeners)
+                )
+            )
+
+            agent["lostLimit"] = ', '.join(
+                list(
+                    map(lambda listener_row: listener_row[3], listeners)
+                )
             )
         return results
 
