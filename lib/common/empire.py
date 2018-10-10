@@ -1990,7 +1990,7 @@ class PowerShellAgentMenu(SubMenu):
             dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
 
             # update the agent log
-            msg = "Tasked agent to delay sleep/jitter " + str(delay) + "/" + str(jitter)
+            msg = "Tasked agent to delay sleep/jitter " + str(delay) + "/" + str(jitter) + " for listener "+listener
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
 
@@ -2003,7 +2003,7 @@ class PowerShellAgentMenu(SubMenu):
             lostLimit = parts[1]
 
         # update this agent's information in the database
-        self.mainMenu.agents.set_agent_listener_fld_db("lost_limit", lostLimit, self.sessionID)
+        self.mainMenu.agents.set_agent_listener_fld_db("lost_limit", lostLimit, self.sessionID, listener)
         self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Set-LostLimit " + str(listener) +" "+str(lostLimit))
 
         # dispatch this event
