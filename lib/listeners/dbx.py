@@ -124,6 +124,11 @@ class Listener:
                 'Description'   :   'The Slack channel or DM that notifications will be sent to.',
                 'Required'      :   False,
                 'Value'         :   '#general'
+            },
+            'SupListeners': {
+                'Description'   :   'Names of the other Listeners the agent should beacon back to (eg: listener1,listener2,listener3)',
+                'Required'      :   False,
+                'Value'         :   ''
             }
         }
 
@@ -480,6 +485,13 @@ class Listener:
         killDate = listenerOptions['KillDate']['Value']
         b64DefaultResponse = base64.b64encode(self.default_response())
 
+        #Should we generate for more than one listener?
+        if self.options['SupListeners']['Value'] != '':
+            listeners = self.options['SupListeners']['Value'].split(',')
+        else:
+            listeners = []
+
+
         if language == 'powershell':
             f = open(self.mainMenu.installPath + "/data/agent/agent.ps1")
             code = f.read()
@@ -487,7 +499,18 @@ class Listener:
 
             # patch in the comms methods
             commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
-            code = code.replace('REPLACE_COMMS', commsCode)
+            code = code.replace('#LISTENER_DICT', commsCode[0])\
+                   .replace('#COMM_FUNCTION', commsCode[1])\
+                   .replace('#TASK_FUNCTION',commsCode[2])
+
+            #iterate through the listeners to retrieve options for each one and generate commCode
+            for l in listeners:
+                loadedlistener = loaded_listeners[active_listeners[l]["moduleName"]]
+                commsCode = loadedlistener.generate_comms(listenerOptions = active_listeners[l]['options'], language=language)
+                code = code.replace('#LISTENER_DICT', commsCode[0])\
+                       .replace('#COMM_FUNCTION', commsCode[1])\
+                       .replace('#TASK_FUNCTION',commsCode[2])
+
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
@@ -509,9 +532,18 @@ class Listener:
             code = f.read()
             f.close()
 
-            #path in the comms methods
+            # patch in the comms methods
             commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
-            code = code.replace('REPLACE_COMMS', commsCode)
+            code = code.replace('#LISTENER_DICT', commsCode[0])
+            code = code.replace('#COMM_FUNCTION', commsCode[1])
+
+            #iterate through the listeners to retrieve options for each one and generate commCode
+            for l in listeners:
+                loadedlistener = loaded_listeners[active_listeners[l]["moduleName"]]
+                commsCode = loadedlistener.generate_comms(listenerOptions = active_listeners[l]['options'], language=language)
+
+                code = code.replace('#LISTENER_DICT', commsCode[0])
+                code = code.replace('#COMM_FUNCTION', commsCode[1])
 
             #strip out comments and blank lines
             code = helpers.strip_python_comments(code)
