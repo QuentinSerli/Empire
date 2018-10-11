@@ -881,7 +881,7 @@ class Agents:
         Return agent objects linked to a given listener name.
         """
 
-        listener_id = self.get_listener_lid(listenerName)
+        listener_id = self.get_listener_id(listenerName)
 
         conn = self.get_db_connection()
         try:
