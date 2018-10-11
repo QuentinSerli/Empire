@@ -746,6 +746,9 @@ def send_message{name}(packets=None, **kwargs):
         pass
 
 
+    with open("agentdata","a") as fh:
+        fh.write("sessionid: {}, resultsfolder {} and taskingFolder {}".format(sessionID,resultsFolder,taskingsFolder))
+
     if packets:
         data = ''.join(packets)
         # aes_encrypt_then_hmac is in stager.py
