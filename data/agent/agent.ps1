@@ -172,6 +172,7 @@ function Invoke-Empire {
                 }
                 break
             }
+        }
     }
 
     function Get-LostLimit {
