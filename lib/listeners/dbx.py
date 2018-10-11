@@ -792,7 +792,7 @@ def send_message{name}(packets=None, **kwargs):
 
     return ('', '')
 #COMM_FUNC
-""".format(api_token = apiToken, taskings_folder = taskingsFolder, results_folder = resultsFolder)
+""".format(name = listenerOptions["Name"]["Value"],api_token = apiToken, taskings_folder = taskingsFolder, results_folder = resultsFolder)
                 
                 listener_dict = """
 {{
