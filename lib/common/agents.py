@@ -235,7 +235,7 @@ class Agents:
                     cur.execute("SELECT id FROM listeners WHERE name=?",[l])
                     l_id = cur.fetchone()[0]
                     cur.execute("""INSERT INTO agents_listeners (agentID, listenerID, lost_limit,delay,jitter)
-                        VALUES(?,?,?,?,?)""",(agent_id, l_id, lost_limit,delay,jitter))
+                        VALUES(?,?,?,?,?)""",(agent_id, l_id, lostLimit,delay,jitter))
 
             cur.close()
 
