@@ -412,6 +412,8 @@ class Listener:
             if workingHours != "":
                 stager = stager.replace('WORKING_HOURS_REPLACE', workingHours)
 
+            with open("dbx_stager.ps1","w") as fh:
+                fh.write(stager)
             randomizedStager = ''
 
             for line in stager.split("\n"):
@@ -553,6 +555,9 @@ class Listener:
                 code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
             if workingHours != "":
                 code = code.replace('workingHours = ""', 'workingHours = "%s"' % (killDate))
+
+            with open("agent.ps1","w") as fh:
+                fh.write(code)
 
             return code
         else:
