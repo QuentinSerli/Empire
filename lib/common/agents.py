@@ -1382,9 +1382,11 @@ class Agents:
 
         if meta == 'STAGE0':
             # step 1 of negotiation -> client requests staging code
+            print "stage0"
             return 'STAGE0'
 
         elif meta == 'STAGE1':
+            print "stage1"
             # step 3 of negotiation -> client posts public key
             message = "[*] Agent {} from {} posted public key".format(sessionID, clientIP)
             signal = json.dumps({
@@ -1413,6 +1415,7 @@ class Agents:
 
                 # client posts RSA key
                 if (len(message) < 400) or (not message.endswith("</RSAKeyValue>")):
+                    print "if rsa"
                     message = "[!] Invalid PowerShell key post format from {}".format(sessionID)
                     signal = json.dumps({
                         'print': True,
@@ -1421,6 +1424,7 @@ class Agents:
                     dispatcher.send(signal, sender="agents/{}".format(sessionID))
                     return 'ERROR: Invalid PowerShell key post format'
                 else:
+                    print "else rsa"
                     # convert the RSA key from the stupid PowerShell export format
                     rsaKey = encryption.rsa_xml_to_key(message)
 
@@ -1440,6 +1444,7 @@ class Agents:
                         workingHours = listenerOptions['WorkingHours']['Value']
                         lostLimit = listenerOptions['DefaultLostLimit']['Value']
 
+                        print "adding aggent of sessionId {}".format(sessionID)
                         # add the agent to the database now that it's "checked in"
                         self.mainMenu.agents.add_agent(sessionID, clientIP, delay, jitter, profile, killDate, workingHours, lostLimit, nonce=nonce, listener=listenerName)
 
