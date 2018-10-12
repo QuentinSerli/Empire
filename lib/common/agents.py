@@ -1532,8 +1532,7 @@ class Agents:
 
         elif meta == 'STAGE2':
             # step 5 of negotiation -> client posts nonce+sysinfo and requests agent
-
-            sessionKey = self.agents[sessionID]['sessionKey']
+            sessionKey = self.get_agent_session_key_db(sessionID)
 
             try:
                 message = encryption.aes_decrypt_and_verify(sessionKey, encData)
