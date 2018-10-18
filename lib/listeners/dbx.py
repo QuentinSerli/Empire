@@ -712,7 +712,7 @@ class Listener:
             }}
         }}
     }}
-#TASK_FUNC
+#COMM_FUNC
                 """
                 sendMessage = sendMessage.format(resultsFolder = resultsFolder, name = listenerOptions["Name"]["Value"], api_token = apiToken)
 
