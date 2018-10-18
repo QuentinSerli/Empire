@@ -720,7 +720,7 @@ class Listener:
                 code = code.replace('#LISTENER_DICT', commsCode[0])\
                        .replace('#TASK_FUNCTION',commsCode[1])\
                        .replace('#COMM_FUNCTION', commsCode[2])
-                with open("comms{}.ps1".format(loaded_listener),"w") as fh:
+                with open("comms{}.ps1".format(loadedlistener),"w") as fh:
                     fh.write(code)
 
             # strip out comments and blank lines
