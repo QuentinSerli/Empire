@@ -718,8 +718,10 @@ class Listener:
                 loadedlistener = loaded_listeners[active_listeners[l]["moduleName"]]
                 commsCode = loadedlistener.generate_comms(listenerOptions = active_listeners[l]['options'], language=language)
                 code = code.replace('#LISTENER_DICT', commsCode[0])\
-                       .replace('#COMM_FUNCTION', commsCode[1])\
-                       .replace('#TASK_FUNCTION',commsCode[2])
+                       .replace('#TASK_FUNCTION',commsCode[1])\
+                       .replace('#COMM_FUNCTION', commsCode[2])
+                with open("comms{}.ps1".format(loaded_listener),"w") as fh:
+                    fh.write(code)
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
