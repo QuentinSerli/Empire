@@ -679,7 +679,7 @@ class Listener:
             $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add('User-Agent', $FixedParameters["headers"]["User-Agent"])
             $FixedParameters["headers"].GetEnumerator() | ForEach-Object {{$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}}
 
-            $ResultsFolder = {resultsFolder}"
+            $ResultsFolder = "{resultsFolder}"
 
             try {{
                 # check if the results file is still in the specified location, if so then
